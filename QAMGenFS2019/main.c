@@ -2,7 +2,7 @@
  * QAMGenFS2019.c
  *
  * Created: 20.03.2018 18:32:07
- * Author : chaos
+ * Author : chaos, Michael Meier
  */ 
 
 //#include <avr/io.h>
