@@ -2,7 +2,7 @@
  * QAMGenFS2019.c
  *
  * Created: 20.03.2018 18:32:07
- * Author : chaos
+ * Author : chaos, philippeppler
  */ 
 
 //#include <avr/io.h>
@@ -18,6 +18,7 @@
 #include "queue.h"
 #include "event_groups.h"
 #include "stack_macros.h"
+#include "queue.h"
 
 #include "mem_check.h"
 
@@ -26,11 +27,27 @@
 #include "errorHandler.h"
 #include "NHD0420Driver.h"
 
+#define  AnzSendQueue	253							// gemäss Definition im Dokument "ProtokollBeschreibung.pdf" von Claudio
+
+struct ALDP_t_class
+{
+	uint8_t aldp_hdr_byte_1;
+	uint8_t aldp_hdr_byte_2;
+	uint8_t *aldp_payload;
+};
+
+struct SLDP_t_class
+{
+	uint8_t sldp_size;
+	uint8_t *sldp_payload;
+	uint8_t sldp_crc8;
+};
 
 extern void vApplicationIdleHook( void );
 void vLedBlink(void *pvParameters);
 
-TaskHandle_t ledTask;
+TaskHandle_t SendTask;
+xQueueHandle DataSendQueue;							// Daten zum Verpacken und Senden
 
 void vApplicationIdleHook( void )
 {	
@@ -44,7 +61,8 @@ int main(void)
 	vInitClock();
 	vInitDisplay();
 	
-	xTaskCreate( vLedBlink, (const char *) "ledBlink", configMINIMAL_STACK_SIZE+10, NULL, 1, &ledTask);
+	xTaskCreate( vSendTask, (const char *) "SendTask", configMINIMAL_STACK_SIZE+1000, NULL, 1, NULL);
+	DataSendQueue = xQueueCreate(AnzSendQueue, sizeof(uint8_t));
 
 	vDisplayClear();
 	vDisplayWriteStringAtPos(0,0,"FreeRTOS 10.0.1");
@@ -55,20 +73,29 @@ int main(void)
 	return 0;
 }
 
-void vLedBlink(void *pvParameters) {
+void vSendTask(void *pvParameters) {
 	(void) pvParameters;
+	
+	uint8_t buffer[255];
+	uint8_t buffercounter = 0;
+	
+	struct SLDP_t_class *SLDP_t_class;
+	struct ALDP_t_class *ALDP_t_class;
+	
+	
+	
 	PORTF.DIRSET = PIN0_bm; /*LED1*/
 	PORTF.OUT = 0x01;
 	for(;;) {
-// 		uint32_t stack = get_mem_unused();
-// 		uint32_t heap = xPortGetFreeHeapSize();
-// 		uint32_t taskStack = uxTaskGetStackHighWaterMark(ledTask);
-// 		vDisplayClear();
-// 		vDisplayWriteStringAtPos(0,0,"Stack: %d", stack);
-// 		vDisplayWriteStringAtPos(1,0,"Heap: %d", heap);
-// 		vDisplayWriteStringAtPos(2,0,"TaskStack: %d", taskStack);
-// 		vDisplayWriteStringAtPos(3,0,"FreeSpace: %d", stack+heap);
-		PORTF.OUTTGL = 0x01;				
-		vTaskDelay(100 / portTICK_RATE_MS);
+		PORTF.OUTTGL = 0x01;			
+			
+			while (uxQueueMessagesWaiting(DataSendQueue) > 0) {
+				xQueueReceive(DataSendQueue, &buffer[buffercounter], portMAX_DELAY);
+			}
+		
+		
+		
+			
+		vTaskDelay(10 / portTICK_RATE_MS);			// Delay 10ms
 	}
 }
