@@ -93,7 +93,6 @@ int main(void)
 void vSendTask(void *pvParameters) {
 	(void) pvParameters;
 	
-	uint8_t buffer[255];
 	uint8_t buffercounter = 0;
 	
 	struct SLDP_t_class *SLDP_Paket;
@@ -107,17 +106,17 @@ void vSendTask(void *pvParameters) {
 			if (xEventGroupGetBits(xSettings) & Settings_Source_Bit1 == 1) {
 				if (xEventGroupGetBits(xSettings) & Settings_Source_Bit1 == 1) {
 					// UART
-					ALDP_Paket->aldp_hdr_byte_1=ALDP_SRC_UART;
+					ALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_UART;
 				}	
 				else {
 					// Testpattern
-					ALDP_Paket->aldp_hdr_byte_1=ALDP_SRC_TEST;
+					ALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_TEST;
 				}
 			} 
 			else {
 				if (xEventGroupGetBits(xSettings) & Settings_Source_Bit1 == 1) {
 					// I2C
-					ALDP_Paket->aldp_hdr_byte_1=ALDP_SRC_I2C;
+					ALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_I2C;
 				}	
 				else {
 					// n.a. (Error)
@@ -128,12 +127,11 @@ void vSendTask(void *pvParameters) {
 			while (uxQueueMessagesWaiting(DataSendQueue) > 0) {
 				xQueueReceive(DataSendQueue, ALDP_Paket->aldp_payload + buffercounter, portMAX_DELAY);
 				buffercounter++;
-			//	xQueueReceive(DataSendQueue, &buffer[buffercounter], portMAX_DELAY);	
 			}
-		
+			ALDP_Paket->aldp_hdr_byte_1 = buffercounter;
 		
 		
 			
-		vTaskDelay(10 / portTICK_RATE_MS);			// Delay 10ms
+		vTaskDelay(50 / portTICK_RATE_MS);			// Delay 50ms
 	}
 }
