@@ -27,7 +27,7 @@
 #include "errorHandler.h"
 #include "NHD0420Driver.h"
 
-#define  AnzSendQueue	253							// gemäss Definition im Dokument "ProtokollBeschreibung.pdf" von Claudio
+#define  AnzSendQueue					253							// gemäss Definition im Dokument "ProtokollBeschreibung.pdf" von Claudio
 
 #define Settings_QAM_Ordnung			1<<0
 #define Settings_Source_Bit1			1<<1
@@ -37,6 +37,11 @@
 #define Status_Error					1<<1
 #define Status_Daten_ready				1<<2
 #define Status_Daten_sending			1<<3
+
+#define PAKET_TYPE_ALDP					0x01
+#define ALDP_SRC_UART					0x00
+#define ALDP_SRC_I2C					0x01
+#define ALDP_SRC_TEST					0x02
 
 EventGroupHandle_t xSettings;
 EventGroupHandle_t xStatus;
@@ -91,8 +96,8 @@ void vSendTask(void *pvParameters) {
 	uint8_t buffer[255];
 	uint8_t buffercounter = 0;
 	
-	struct SLDP_t_class *SLDP_t_class;
-	struct ALDP_t_class *ALDP_t_class;
+	struct SLDP_t_class *SLDP_Paket;
+	struct ALDP_t_class *ALDP_Paket;
 	
 	PORTF.DIRSET = PIN0_bm; /*LED1*/
 	PORTF.OUT = 0x01;
@@ -102,19 +107,28 @@ void vSendTask(void *pvParameters) {
 			if (xEventGroupGetBits(xSettings) & Settings_Source_Bit1 == 1) {
 				if (xEventGroupGetBits(xSettings) & Settings_Source_Bit1 == 1) {
 					// UART
-				} else {
+					ALDP_Paket->aldp_hdr_byte_1=ALDP_SRC_UART;
+				}	
+				else {
 					// Testpattern
+					ALDP_Paket->aldp_hdr_byte_1=ALDP_SRC_TEST;
 				}
-			} else 	if (xEventGroupGetBits(xSettings) & Settings_Source_Bit1 == 1) {
-				// I2C
-			} else {
-				// n.a. (Error)
+			} 
+			else {
+				if (xEventGroupGetBits(xSettings) & Settings_Source_Bit1 == 1) {
+					// I2C
+					ALDP_Paket->aldp_hdr_byte_1=ALDP_SRC_I2C;
+				}	
+				else {
+					// n.a. (Error)
+				}
 			}
-
 			
-		
+
 			while (uxQueueMessagesWaiting(DataSendQueue) > 0) {
-				xQueueReceive(DataSendQueue, &buffer[buffercounter], portMAX_DELAY);
+				xQueueReceive(DataSendQueue, ALDP_Paket->aldp_payload + buffercounter, portMAX_DELAY);
+				buffercounter++;
+			//	xQueueReceive(DataSendQueue, &buffer[buffercounter], portMAX_DELAY);	
 			}
 		
 		
