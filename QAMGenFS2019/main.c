@@ -29,6 +29,18 @@
 
 #define  AnzSendQueue	253							// gemäss Definition im Dokument "ProtokollBeschreibung.pdf" von Claudio
 
+#define Settings_QAM_Ordnung			1<<0
+#define Settings_Source_Bit1			1<<1
+#define Settings_Source_Bit2			1<<2
+#define Settings_Frequenz				1<<3
+
+#define Status_Error					1<<1
+#define Status_Daten_ready				1<<2
+#define Status_Daten_sending			1<<3
+
+EventGroupHandle_t xSettings;
+EventGroupHandle_t xStatus;
+
 struct ALDP_t_class
 {
 	uint8_t aldp_hdr_byte_1;
@@ -44,7 +56,7 @@ struct SLDP_t_class
 };
 
 extern void vApplicationIdleHook( void );
-void vLedBlink(void *pvParameters);
+void vSendTask(void *pvParameters);
 
 TaskHandle_t SendTask;
 xQueueHandle DataSendQueue;							// Daten zum Verpacken und Senden
@@ -82,13 +94,25 @@ void vSendTask(void *pvParameters) {
 	struct SLDP_t_class *SLDP_t_class;
 	struct ALDP_t_class *ALDP_t_class;
 	
-	
-	
 	PORTF.DIRSET = PIN0_bm; /*LED1*/
 	PORTF.OUT = 0x01;
 	for(;;) {
-		PORTF.OUTTGL = 0x01;			
+		PORTF.OUTTGL = 0x01;	
 			
+			if (xEventGroupGetBits(xSettings) & Settings_Source_Bit1 == 1) {
+				if (xEventGroupGetBits(xSettings) & Settings_Source_Bit1 == 1) {
+					// UART
+				} else {
+					// Testpattern
+				}
+			} else 	if (xEventGroupGetBits(xSettings) & Settings_Source_Bit1 == 1) {
+				// I2C
+			} else {
+				// n.a. (Error)
+			}
+
+			
+		
 			while (uxQueueMessagesWaiting(DataSendQueue) > 0) {
 				xQueueReceive(DataSendQueue, &buffer[buffercounter], portMAX_DELAY);
 			}
