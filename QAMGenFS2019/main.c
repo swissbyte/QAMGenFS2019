@@ -27,6 +27,7 @@
 #include "errorHandler.h"
 #include "NHD0420Driver.h"
 
+
 #define  AnzSendQueue					253							// gemäss Definition im Dokument "ProtokollBeschreibung.pdf" von Claudio
 
 #define Settings_QAM_Ordnung			1<<0
@@ -100,8 +101,25 @@ void vSendTask(void *pvParameters) {
 	
 	PORTF.DIRSET = PIN0_bm; /*LED1*/
 	PORTF.OUT = 0x01;
+	
+	uint8_t a = 0x01;
+	uint8_t b = 0x02;
+	uint8_t c = 0x03;
+	uint8_t d = 0x04;
+	uint8_t e = 0x05;
+	
+	
+	xQueueSendToBack(DataSendQueue, &a, portMAX_DELAY);
+	xQueueSendToBack(DataSendQueue, &b, portMAX_DELAY);
+	xQueueSendToBack(DataSendQueue, &c, portMAX_DELAY);
+	xQueueSendToBack(DataSendQueue, &d, portMAX_DELAY);
+	xQueueSendToBack(DataSendQueue, &e, portMAX_DELAY);
+	
+	
 	for(;;) {
 		PORTF.OUTTGL = 0x01;	
+			
+			//********** ALDP **********
 			
 			if (xEventGroupGetBits(xSettings) & Settings_Source_Bit1 == 1) {
 				if (xEventGroupGetBits(xSettings) & Settings_Source_Bit1 == 1) {
@@ -130,8 +148,13 @@ void vSendTask(void *pvParameters) {
 			}
 			ALDP_Paket->aldp_hdr_byte_1 = buffercounter;
 		
-		
+			//******* SLDP *************
 			
+			SLDP_Paket->sldp_payload = &ALDP_Paket;		// SLDP Payload
+			SLDP_Paket->sldp_crc8 = 0x00;				// SLDP CRC8			TBD
+			SLDP_Paket->sldp_size = buffercounter + 2;	// SLDP Size
+			
+			buffercounter = 0;
 		vTaskDelay(50 / portTICK_RATE_MS);			// Delay 50ms
 	}
 }
