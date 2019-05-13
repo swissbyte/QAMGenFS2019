@@ -118,35 +118,36 @@ void vSendTask(void *pvParameters) {
 	
 	for(;;) {
 		PORTF.OUTTGL = 0x01;	
+		if uxQueueMessagesWaiting(DataSendQueue) > 0) {
 			
 			//********** ALDP **********
 			
-			if (xEventGroupGetBits(xSettings) & Settings_Source_Bit1 == 1) {
 				if (xEventGroupGetBits(xSettings) & Settings_Source_Bit1 == 1) {
-					// UART
-					ALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_UART;
-				}	
+					if (xEventGroupGetBits(xSettings) & Settings_Source_Bit1 == 1) {
+						// UART
+						ALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_UART;
+					}	
+					else {
+						// Testpattern
+						ALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_TEST;
+					}
+				} 
 				else {
-					// Testpattern
-					ALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_TEST;
+					if (xEventGroupGetBits(xSettings) & Settings_Source_Bit1 == 1) {
+						// I2C
+						ALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_I2C;
+					}	
+					else {
+						// n.a. (Error)
+					}
 				}
-			} 
-			else {
-				if (xEventGroupGetBits(xSettings) & Settings_Source_Bit1 == 1) {
-					// I2C
-					ALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_I2C;
-				}	
-				else {
-					// n.a. (Error)
-				}
-			}
 			
 
 			while (uxQueueMessagesWaiting(DataSendQueue) > 0) {
-				xQueueReceive(DataSendQueue, ALDP_Paket->aldp_payload + buffercounter, portMAX_DELAY);
+				xQueueReceive(DataSendQueue, ALDP_Paket->aldp_payload + buffercounter, portMAX_DELAY);		// Umsetzung?? Pointer und struct 
 				buffercounter++;
 			}
-			ALDP_Paket->aldp_hdr_byte_1 = buffercounter;
+			ALDP_Paket->aldp_hdr_byte_1 = buffercounter;						// ALDP size
 		
 			//******* SLDP *************
 			
@@ -155,6 +156,12 @@ void vSendTask(void *pvParameters) {
 			SLDP_Paket->sldp_size = buffercounter + 2;	// SLDP Size
 			
 			buffercounter = 0;
-		vTaskDelay(50 / portTICK_RATE_MS);			// Delay 50ms
+			vTaskDelay(50 / portTICK_RATE_MS);				// Delay 50ms
+		
+					//******* SEND *************
+			
+			//Aufruf der Sendefunktion
+
+		}
 	}
 }
