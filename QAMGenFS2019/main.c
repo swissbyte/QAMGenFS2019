@@ -21,16 +21,19 @@
 
 #include "mem_check.h"
 
+#include "dma.h"
 #include "init.h"
 #include "utils.h"
 #include "errorHandler.h"
 #include "NHD0420Driver.h"
 
+#include "tasks.h"
 
 extern void vApplicationIdleHook( void );
 void vLedBlink(void *pvParameters);
 
 TaskHandle_t ledTask;
+TaskHandle_t TaskDMAHandler;
 
 void vApplicationIdleHook( void )
 {	
@@ -45,6 +48,12 @@ int main(void)
 	vInitDisplay();
 	
 	xTaskCreate( vLedBlink, (const char *) "ledBlink", configMINIMAL_STACK_SIZE+10, NULL, 1, &ledTask);
+	xTaskCreate( vTask_DMAHandler, (const char *) "dmaHandler", configMINIMAL_STACK_SIZE + 100, NULL, 1, &TaskDMAHandler);
+
+	vInitDAC();
+	vInitDMATimer();
+	vInitDMA();
+
 
 	vDisplayClear();
 	vDisplayWriteStringAtPos(0,0,"FreeRTOS 10.0.1");
