@@ -33,7 +33,7 @@ EventGroupHandle_t xSettings;
 EventGroupHandle_t xStatus;
 
 TaskHandle_t SendTask;
-xQueueHandle xDataSendQueue;							// Daten zum Verpacken und Senden
+xQueueHandle xDataSendQueue;							// Daten zum Verpacken und Senden  (Daten von Cedi)
 
 
 void vSendTask(void *pvParameters) {
@@ -94,7 +94,6 @@ void vSendTask(void *pvParameters) {
 			
 
 			while (uxQueueMessagesWaiting(xDataSendQueue) > 0) {
-				//xQueueReceive(xDataSendQueue, ALDP_Paket->aldp_payload*[buffercounter], portMAX_DELAY);		// Umsetzung?? Pointer und struct 
 				xQueueReceive(xDataSendQueue, &xALDP_Paket[uibuffercounter+2], portMAX_DELAY);					// Umsetzung?? Pointer und struct 
 				uibuffercounter++;
 			}
@@ -102,15 +101,15 @@ void vSendTask(void *pvParameters) {
 		
 //******* SLDP *************
 			
-			xSLDP_Paket->sldp_payload = xALDP_Paket;		// SLDP Payload
-			xSLDP_Paket->sldp_crc8 = 0x00;					// SLDP CRC8			TBD
-			xSLDP_Paket->sldp_size = uibuffercounter + 2;	// SLDP Size
+			xSLDP_Paket->sldp_payload = xALDP_Paket;			// SLDP Payload
+			xSLDP_Paket->sldp_crc8 = 0x00;					// SLDP CRC8 als Trailer			TBD
+			xSLDP_Paket->sldp_size = uibuffercounter + 2;	// SLDP Size als Header
 			
 			vTaskDelay(50 / portTICK_RATE_MS);				// Delay 50ms
 			
 //******* SEND *************
 			
-			//Aufruf der Sendefunktion
+			//SLDP in buffer schreiben
 
 		}
 	}
