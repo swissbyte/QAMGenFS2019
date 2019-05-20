@@ -9,11 +9,14 @@
 #ifndef PROTOKOLLHANDLER_H_
 #define PROTOKOLLHANDLER_H_
 
+#define ANZSENDQUEUE					253							// gemäss Definition im Dokument "ProtokollBeschreibung.pdf" von Claudio
+
+
 struct ALDP_t_class
 {
 	uint8_t aldp_hdr_byte_1;
 	uint8_t aldp_hdr_byte_2;
-	uint8_t aldp_payload[10];
+	uint8_t aldp_payload[ANZSENDQUEUE];
 };
 
 struct SLDP_t_class
