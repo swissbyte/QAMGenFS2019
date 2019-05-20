@@ -13,7 +13,7 @@
 #include "protokollhandler.h"
 
 
-#define  AnzSendQueue					253							// gemäss Definition im Dokument "ProtokollBeschreibung.pdf" von Claudio
+#define  ANZSENDQUEUE					253							// gemäss Definition im Dokument "ProtokollBeschreibung.pdf" von Claudio
 
 #define Settings_QAM_Ordnung			1<<0
 #define Settings_Source_Bit1			1<<1
@@ -46,7 +46,7 @@ void vSendTask(void *pvParameters) {
 	PORTF.DIRSET = PIN0_bm; /*LED1*/
 	PORTF.OUT = 0x01;
 	
-	xDataSendQueue = xQueueCreate(AnzSendQueue, sizeof(uint8_t));
+	xDataSendQueue = xQueueCreate(ANZSENDQUEUE, sizeof(uint8_t));
 
 	
 	uint8_t	uibuffercounter = 0;
@@ -92,23 +92,22 @@ void vSendTask(void *pvParameters) {
 						// n.a. (Error)
 					}
 				}
+			uint8_t xoutBuffer[uxQueueMessagesWaiting(xDataSendQueue)+2];
+			xALDP_Paket = (struct ALDP_t_class *) &xoutBuffer[0];
 			
-	
-			
-			while (uxQueueMessagesWaiting(xDataSendQueue) > 0) {												// erweitern mit masx
-				uint8_t *xoutBufferPointer;
-				uint8_t xoutBuffer[10] = {0}; // noch dynamisch machen
+			while ((uxQueueMessagesWaiting(xDataSendQueue) > 0) && uibuffercounter < ANZSENDQUEUE ) {
+				uint8_t xoutBufferPointer;
 				
 				xQueueReceive(xDataSendQueue, &xoutBufferPointer , portMAX_DELAY);					// Umsetzung?? Pointer und struct 
 				
-				xoutBufferPointer = &xoutBuffer[0];
+				xoutBuffer[uibuffercounter+2] = xoutBufferPointer;
 				
-				xALDP_Paket = (struct ALDP_t_class *) &xoutBufferPointer[1];
 				
-				xALDP_Paket->aldp_payload[uibuffercounter] = xoutBuffer[uibuffercounter];					// ausgelesener wert aus queue 
+				
+				xALDP_Paket->aldp_payload[uibuffercounter] = xoutBuffer[uibuffercounter+2];					// ausgelesener wert aus queue 
 				uibuffercounter++;
 			}
-		//	xALDP_Paket->aldp_hdr_byte_1 = uibuffercounter;						// ALDP size
+			xALDP_Paket->aldp_hdr_byte_1 = uibuffercounter;						// ALDP size
 		
 //******* SLDP *************
 			
