@@ -28,6 +28,7 @@
 #define ALDP_SRC_UART					0x00
 #define ALDP_SRC_I2C					0x01
 #define ALDP_SRC_TEST					0x02
+#define ALDP_SRC_ERROR					0xFF
 
 EventGroupHandle_t xSettings;
 EventGroupHandle_t xStatus;
@@ -72,29 +73,9 @@ void vSendTask(void *pvParameters) {
 			uibuffercounter = 0;
 
 //********** ALDP **********
-			
-				if ((xEventGroupGetBits(xSettings) & Settings_Source_Bit1) == 1) {
-					if ((xEventGroupGetBits(xSettings) & Settings_Source_Bit1) == 1) {
-						// UART
-						xALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_UART;
-					}	
-					else {
-						// Testpattern
-						xALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_TEST;
-					}
-				} 
-				else {
-					if ((xEventGroupGetBits(xSettings) & Settings_Source_Bit1) == 1) {
-						// I2C
-						xALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_I2C;
-					}	
-					else {
-						// n.a. (Error)
-					}
-				}
-			uint8_t xoutBuffer[uxQueueMessagesWaiting(xDataSendQueue)+2];
-			xALDP_Paket = (struct ALDP_t_class *) &xoutBuffer[0];
-			
+				uint8_t xoutBuffer[uxQueueMessagesWaiting(xDataSendQueue)+2];
+				xALDP_Paket = (struct ALDP_t_class *) &xoutBuffer[0];
+						
 			while ((uxQueueMessagesWaiting(xDataSendQueue) > 0) && uibuffercounter < ANZSENDQUEUE ) {
 				uint8_t xoutBufferPointer;
 				
@@ -107,7 +88,29 @@ void vSendTask(void *pvParameters) {
 				xALDP_Paket->aldp_payload[uibuffercounter] = xoutBuffer[uibuffercounter+2];					// ausgelesener wert aus queue 
 				uibuffercounter++;
 			}
-			xALDP_Paket->aldp_hdr_byte_1 = uibuffercounter;						// ALDP size
+			
+				if ((xEventGroupGetBits(xSettings) & Settings_Source_Bit1) == 1) {
+					if ((xEventGroupGetBits(xSettings) & Settings_Source_Bit1) == 1) {
+						// UART
+						xALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_UART;
+					}
+					else {
+						// Testpattern
+						xALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_TEST;
+					}
+				}
+				else {
+					if ((xEventGroupGetBits(xSettings) & Settings_Source_Bit1) == 1) {
+						// I2C
+						xALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_I2C;
+					}
+					else {
+						// n.a. (Error)
+						xALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_ERROR;
+					}
+				}
+
+			xALDP_Paket->aldp_hdr_byte_2 = uibuffercounter;						// ALDP size
 		
 //******* SLDP *************
 			
