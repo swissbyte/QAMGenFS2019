@@ -39,8 +39,9 @@ xQueueHandle xDataSendQueue;							// Daten zum Verpacken und Senden  (Daten von
 void vSendTask(void *pvParameters) {
 	(void) pvParameters;
 	
-	struct SLDP_t_class *xSLDP_Paket;
 	struct ALDP_t_class *xALDP_Paket;
+	struct SLDP_t_class xSLDP_Paket;
+	
 	
 	PORTF.DIRSET = PIN0_bm; /*LED1*/
 	PORTF.OUT = 0x01;
@@ -51,11 +52,11 @@ void vSendTask(void *pvParameters) {
 	uint8_t	uibuffercounter = 0;
 
 	
-	uint8_t a = 0x10;
-	uint8_t b = 0x20;
-	uint8_t c = 0x30;
-	uint8_t d = 0x40;
-	uint8_t e = 0x50;
+	uint8_t a = 10;
+	uint8_t b = 20;
+	uint8_t c = 30;
+	uint8_t d = 40;
+	uint8_t e = 50;
 	
 	
 	xQueueSendToBack(xDataSendQueue, &a, portMAX_DELAY);
@@ -72,8 +73,8 @@ void vSendTask(void *pvParameters) {
 
 //********** ALDP **********
 			
-				if (xEventGroupGetBits(xSettings) & Settings_Source_Bit1 == 1) {
-					if (xEventGroupGetBits(xSettings) & Settings_Source_Bit1 == 1) {
+				if ((xEventGroupGetBits(xSettings) & Settings_Source_Bit1) == 1) {
+					if ((xEventGroupGetBits(xSettings) & Settings_Source_Bit1) == 1) {
 						// UART
 						xALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_UART;
 					}	
@@ -83,7 +84,7 @@ void vSendTask(void *pvParameters) {
 					}
 				} 
 				else {
-					if (xEventGroupGetBits(xSettings) & Settings_Source_Bit1 == 1) {
+					if ((xEventGroupGetBits(xSettings) & Settings_Source_Bit1) == 1) {
 						// I2C
 						xALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_I2C;
 					}	
@@ -92,18 +93,28 @@ void vSendTask(void *pvParameters) {
 					}
 				}
 			
-
-			while (uxQueueMessagesWaiting(xDataSendQueue) > 0) {
-				xQueueReceive(xDataSendQueue, &xALDP_Paket[uibuffercounter+2], portMAX_DELAY);					// Umsetzung?? Pointer und struct 
+	
+			
+			while (uxQueueMessagesWaiting(xDataSendQueue) > 0) {												// erweitern mit masx
+				uint8_t *xoutBufferPointer;
+				uint8_t xoutBuffer[10] = {0}; // noch dynamisch machen
+				
+				xQueueReceive(xDataSendQueue, &xoutBufferPointer , portMAX_DELAY);					// Umsetzung?? Pointer und struct 
+				
+				xoutBufferPointer = &xoutBuffer[0];
+				
+				xALDP_Paket = (struct ALDP_t_class *) &xoutBufferPointer[1];
+				
+				xALDP_Paket->aldp_payload[uibuffercounter] = xoutBuffer[uibuffercounter];					// ausgelesener wert aus queue 
 				uibuffercounter++;
 			}
-			xALDP_Paket->aldp_hdr_byte_1 = uibuffercounter;						// ALDP size
+		//	xALDP_Paket->aldp_hdr_byte_1 = uibuffercounter;						// ALDP size
 		
 //******* SLDP *************
 			
-			xSLDP_Paket->sldp_payload = xALDP_Paket;			// SLDP Payload
-			xSLDP_Paket->sldp_crc8 = 0x00;					// SLDP CRC8 als Trailer			TBD
-			xSLDP_Paket->sldp_size = uibuffercounter + 2;	// SLDP Size als Header
+		//	xSLDP_Paket.sldp_payload = xALDP_Paket;			// SLDP Payload
+			xSLDP_Paket.sldp_crc8 = 0x55;					// SLDP CRC8 als Trailer			TBD
+			xSLDP_Paket.sldp_size = uibuffercounter + 2;	// SLDP Size als Header
 			
 			vTaskDelay(50 / portTICK_RATE_MS);				// Delay 50ms
 			
