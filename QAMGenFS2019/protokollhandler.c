@@ -13,6 +13,7 @@
 #include "protokollhandler.h"
 
 
+#define  AnzSendQueue					253							// gemäss Definition im Dokument "ProtokollBeschreibung.pdf" von Claudio
 
 #define Settings_QAM_Ordnung			1<<0
 #define Settings_Source_Bit1			1<<1
@@ -38,16 +39,17 @@ xQueueHandle xDataSendQueue;							// Daten zum Verpacken und Senden  (Daten von
 void vSendTask(void *pvParameters) {
 	(void) pvParameters;
 	
-	struct ALDP_t_class xALDP_Paket;
+	struct ALDP_t_class *xALDP_Paket;
 	struct SLDP_t_class xSLDP_Paket;
 	
 	
 	PORTF.DIRSET = PIN0_bm; /*LED1*/
 	PORTF.OUT = 0x01;
 	
-	xDataSendQueue = xQueueCreate(ANZSENDQUEUE, sizeof(uint8_t));
+	xDataSendQueue = xQueueCreate(AnzSendQueue, sizeof(uint8_t));
 
 	
+	uint8_t	uibuffercounter = 0;
 
 	
 	uint8_t a = 10;
@@ -67,45 +69,50 @@ void vSendTask(void *pvParameters) {
 	for(;;) {
 		PORTF.OUTTGL = 0x01;	
 		if (uxQueueMessagesWaiting(xDataSendQueue) > 0) {
+			uibuffercounter = 0;
 
 //********** ALDP **********
 			
 				if ((xEventGroupGetBits(xSettings) & Settings_Source_Bit1) == 1) {
 					if ((xEventGroupGetBits(xSettings) & Settings_Source_Bit1) == 1) {
 						// UART
-						xALDP_Paket.aldp_hdr_byte_1 = ALDP_SRC_UART;
+						xALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_UART;
 					}	
 					else {
 						// Testpattern
-						xALDP_Paket.aldp_hdr_byte_1 = ALDP_SRC_TEST;
+						xALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_TEST;
 					}
 				} 
 				else {
 					if ((xEventGroupGetBits(xSettings) & Settings_Source_Bit1) == 1) {
 						// I2C
-						xALDP_Paket.aldp_hdr_byte_1 = ALDP_SRC_I2C;
+						xALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_I2C;
 					}	
 					else {
 						// n.a. (Error)
 					}
 				}
 			
-			uint8_t	uibuffercounter = 0;
-			xALDP_Paket.aldp_payload[ANZSENDQUEUE] = { 1 };
+	
 			
-			while ((uxQueueMessagesWaiting(xDataSendQueue) > 0) && uibuffercounter < ANZSENDQUEUE ) {
-				uint8_t xoutBufferPointer;
+			while (uxQueueMessagesWaiting(xDataSendQueue) > 0) {												// erweitern mit masx
+				uint8_t *xoutBufferPointer;
+				uint8_t xoutBuffer[10] = {0}; // noch dynamisch machen
 				
 				xQueueReceive(xDataSendQueue, &xoutBufferPointer , portMAX_DELAY);					// Umsetzung?? Pointer und struct 
-					
-				xALDP_Paket.aldp_payload[uibuffercounter] = xoutBufferPointer;					// ausgelesener wert aus queue 
+				
+				xoutBufferPointer = &xoutBuffer[0];
+				
+				xALDP_Paket = (struct ALDP_t_class *) &xoutBufferPointer[1];
+				
+				xALDP_Paket->aldp_payload[uibuffercounter] = xoutBuffer[uibuffercounter];					// ausgelesener wert aus queue 
 				uibuffercounter++;
 			}
-			xALDP_Paket.aldp_hdr_byte_2 = uibuffercounter;						// ALDP size
+		//	xALDP_Paket->aldp_hdr_byte_1 = uibuffercounter;						// ALDP size
 		
 //******* SLDP *************
 			
-	//		xSLDP_Paket.sldp_payload = xALDP_Paket;			// SLDP Payload
+		//	xSLDP_Paket.sldp_payload = xALDP_Paket;			// SLDP Payload
 			xSLDP_Paket.sldp_crc8 = 0x55;					// SLDP CRC8 als Trailer			TBD
 			xSLDP_Paket.sldp_size = uibuffercounter + 2;	// SLDP Size als Header
 			
