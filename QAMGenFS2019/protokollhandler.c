@@ -71,53 +71,27 @@ void vSendTask(void *pvParameters) {
 		PORTF.OUTTGL = 0x01;	
 		if (uxQueueMessagesWaiting(xDataSendQueue) > 0) {
 			uibuffercounter = 0;
-
-//********** ALDP **********
-				
-				uint8_t xoutBuffer[uxQueueMessagesWaiting(xDataSendQueue)+2];								//Buffer für Queue auslesen
-				xALDP_Paket = (struct ALDP_t_class *) &xoutBuffer[0];										//ALDP_Paket über Buffer legen
-
-			
-			
-				if ((xEventGroupGetBits(xSettings) & Settings_Source_Bit1) == 1) {
-					if ((xEventGroupGetBits(xSettings) & Settings_Source_Bit1) == 1) {
-						// UART
-						xALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_UART;
-					}	
-					else {
-						// Testpattern
-						xALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_TEST;
-					}
-				} 
-				else {
-					if ((xEventGroupGetBits(xSettings) & Settings_Source_Bit1) == 1) {
-						// I2C
-						xALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_I2C;
-					}	
-					else {
-						// n.a. (Error)
-						xALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_ERROR;						
-					}
-				}
-			
+						
 			while ((uxQueueMessagesWaiting(xDataSendQueue) > 0) && uibuffercounter < ANZSENDQUEUE ) {
 				uint8_t xoutBufferPointer;
-				
 				xQueueReceive(xDataSendQueue, &xoutBufferPointer , portMAX_DELAY);					// Umsetzung?? Pointer und struct 
-				
 				xoutBuffer[uibuffercounter+2] = xoutBufferPointer;
-				
-	//			xALDP_Paket->aldp_payload[uibuffercounter] = xoutBuffer[uibuffercounter+2];					// ausgelesener wert aus queue 
 				uibuffercounter++;
 			}
+			uint8_t *pointerToBuffer = &xoutBuffer[0];
+			
 			xALDP_Paket->aldp_hdr_byte_2 = uibuffercounter;						// ALDP size
-		
+			xSLDP_Paket.sldp_size = uibuffercounter + 2;						// SLDP Size als Header
+
+			uint8_t xoutBuffer[uxQueueMessagesWaiting(xDataSendQueue)+2];								//Buffer für Queue auslesen
+			xALDP_Paket = (struct ALDP_t_class *)xSLDP_Paket.sldp_payload;								//ALDP_Paket über SLDP legen
+
+
+
 //******* SLDP *************
 			
-			xSLDP_Paket = xALDP_Paket;
-			xSLDP_Paket.sldp_payload = xALDP_Paket->aldp_hdr_byte_1;			// SLDP Payload
+
 			xSLDP_Paket.sldp_crc8 = 0x55;										// SLDP CRC8 als Trailer			TBD
-			xSLDP_Paket.sldp_size = uibuffercounter + 2;						// SLDP Size als Header
 			
 			vTaskDelay(100 / portTICK_RATE_MS);									// Delay 50ms
 			
