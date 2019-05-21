@@ -34,8 +34,8 @@
 #define Status_Daten_ready				1<<2
 #define Status_Daten_sending			1<<3
 // xProtokollBufferStatus
-#define BUFFER_A						1<<0
-#define BUFFER_B						1<<1
+#define BUFFER_A_freetouse				1<<0
+#define BUFFER_B_freetouse					1<<1
 
 EventGroupHandle_t xSettings;							// Settings vom GUI von Cedi
 EventGroupHandle_t xStatus;								// auch irgendwas von Cedi
@@ -142,17 +142,21 @@ void vProtokollHandlerTask(void *pvParameters) {
 			xSLDP_Paket.sldp_crc8 = 0x66;															// CRC8 berechnen!
 			outBuffer[xSLDP_Paket.sldp_size + 1] = xSLDP_Paket.sldp_crc8;			
 			
-			xEventGroupSetBits(xProtokollBufferStatus, BUFFER_B);									// Debugging
+			xEventGroupSetBits(xProtokollBufferStatus, BUFFER_A_freetouse);									// Debugging
 			
-			if ((xEventGroupGetBits(xProtokollBufferStatus) & BUFFER_A))
+			if ((xEventGroupGetBits(xProtokollBufferStatus) & BUFFER_A_freetouse))
 			{
-				memcpy(uiglobalProtokollBuffer_A, outBuffer, sizeof(outBuffer));	
+				xEventGroupClearBits(xProtokollBufferStatus, BUFFER_A_freetouse);
+				memcpy(uiglobalProtokollBuffer_A, outBuffer, sizeof(outBuffer));
+				xEventGroupSetBits(xProtokollBufferStatus, BUFFER_A_freetouse);	
 			} 
 			else 
 			{
-				if ((xEventGroupGetBits(xProtokollBufferStatus) & BUFFER_B)) 
+				if ((xEventGroupGetBits(xProtokollBufferStatus) & BUFFER_B_freetouse)) 
 				{
+					xEventGroupClearBits(xProtokollBufferStatus, BUFFER_B_freetouse);
 					memcpy(uiglobalProtokollBuffer_B, outBuffer, sizeof(outBuffer));
+					xEventGroupSetBits(xProtokollBufferStatus, BUFFER_B_freetouse);
 				}
 				else
 				{
