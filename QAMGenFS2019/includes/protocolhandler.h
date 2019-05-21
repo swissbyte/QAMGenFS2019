@@ -1,5 +1,5 @@
 /*
- * protokollhandler.h
+ * protocolhandler.h
  *
  * Created: 18.05.2019 17:23:41
  *  Author: PhilippAdmin
