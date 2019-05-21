@@ -15,31 +15,32 @@
 
 #define  ANZSENDQUEUE					253							// gemäss Definition im Dokument "ProtokollBeschreibung.pdf" von Claudio
 
+// xSettings
 #define Settings_QAM_Ordnung			1<<0
 #define Settings_Source_Bit1			1<<1
 #define Settings_Source_Bit2			1<<2
 #define Settings_Frequenz				1<<3
-
+// xStatus
 #define Status_Error					1<<1
 #define Status_Daten_ready				1<<2
 #define Status_Daten_sending			1<<3
-
+// xQuelle
 #define PAKET_TYPE_ALDP					0x01
 #define ALDP_SRC_UART					0x00
 #define ALDP_SRC_I2C					0x01
 #define ALDP_SRC_TEST					0x02
 #define ALDP_SRC_ERROR					0xFF
 
-EventGroupHandle_t xSettings;
-EventGroupHandle_t xStatus;
+EventGroupHandle_t xSettings;							// Settings vom GUI von Cedi
+EventGroupHandle_t xStatus;								// auch irgendwas von Cedi
 
-
+EventGroupHandle_t xProtokollBufferStatus;				// Eventbits für Status von Buffer von Protokoll-Task zu Modulator-Task
 
 TaskHandle_t SendTask;
 xQueueHandle xDataSendQueue;							// Daten zum Verpacken und Senden  (Daten von Cedi)
 
 
-void vSendTask(void *pvParameters) {
+void vProtokollHandlerTask(void *pvParameters) {
 	(void) pvParameters;
 	
 	struct ALDP_t_class *xALDP_Paket;
@@ -54,20 +55,20 @@ void vSendTask(void *pvParameters) {
 	
 	uint8_t	uibuffercounter = 0;
 
-	
+/*
+	// Debbuging	
 	uint8_t a = 10;
 	uint8_t b = 20;
 	uint8_t c = 30;
 	uint8_t d = 40;
 	uint8_t e = 50;
-	
-	
+
 	xQueueSendToBack(xDataSendQueue, &a, portMAX_DELAY);
 	xQueueSendToBack(xDataSendQueue, &b, portMAX_DELAY);
 	xQueueSendToBack(xDataSendQueue, &c, portMAX_DELAY);
 	xQueueSendToBack(xDataSendQueue, &d, portMAX_DELAY);
 	xQueueSendToBack(xDataSendQueue, &e, portMAX_DELAY);
-	
+*/
 	
 	for(;;) {
 		PORTF.OUTTGL = 0x01;	

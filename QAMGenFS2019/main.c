@@ -44,7 +44,7 @@ int main(void)
 	vInitClock();
 	vInitDisplay();
 	
-	xTaskCreate( vSendTask, (const char *) "SendTask", configMINIMAL_STACK_SIZE+1000, NULL, 1, NULL);
+	xTaskCreate( vProtokollHandlerTask, (const char *) "ProtokollHandlerTask", configMINIMAL_STACK_SIZE+1000, NULL, 1, NULL);
 
 	vDisplayClear();
 	vDisplayWriteStringAtPos(0,0,"FreeRTOS 10.0.1");
