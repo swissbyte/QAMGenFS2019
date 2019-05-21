@@ -62,6 +62,7 @@ void vProtokollHandlerTask(void *pvParameters) {
 	
 	xDataSendQueue = xQueueCreate(ANZSENDQUEUE, sizeof(uint8_t));
 
+	xProtokollBufferStatus = xEventGroupCreate();
 	
 	uint8_t	uibuffercounter = 0;
 
@@ -129,8 +130,9 @@ void vProtokollHandlerTask(void *pvParameters) {
 			
 //******* SendeBuffer beschreiben *************
 			
-			//SLDP in buffer schreiben
-			uint8_t outBuffer[xSLDP_Paket.sldp_size + 2];
+			
+			uint8_t outBuffer[11];																	// Debugging
+			//uint8_t outBuffer[xSLDP_Paket.sldp_size + 2];											// WARUM GEHT DAS NICHT???
 			outBuffer[0] = xSLDP_Paket.sldp_size;
 
 			uint8_t i = 0;
@@ -140,10 +142,22 @@ void vProtokollHandlerTask(void *pvParameters) {
 			xSLDP_Paket.sldp_crc8 = 0x66;															// CRC8 berechnen!
 			outBuffer[xSLDP_Paket.sldp_size + 1] = xSLDP_Paket.sldp_crc8;			
 			
+			xEventGroupSetBits(xProtokollBufferStatus, BUFFER_B);									// Debugging
 			
-			if ((xEventGroupGetBits(xSettings) & BUFFER_A) == 1) {
-				memcpy(uiglobalProtokollBuffer_A, outBuffer, xSLDP_Paket.sldp_size+2);
-				
+			if ((xEventGroupGetBits(xProtokollBufferStatus) & BUFFER_A))
+			{
+				memcpy(uiglobalProtokollBuffer_A, outBuffer, sizeof(outBuffer));	
+			} 
+			else 
+			{
+				if ((xEventGroupGetBits(xProtokollBufferStatus) & BUFFER_B)) 
+				{
+					memcpy(uiglobalProtokollBuffer_B, outBuffer, sizeof(outBuffer));
+				}
+				else
+				{
+							// n.a. (Error)															/ Error ausgeben
+				}
 			}
 			
 			
