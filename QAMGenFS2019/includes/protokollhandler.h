@@ -13,7 +13,7 @@ struct ALDP_t_class
 {
 	uint8_t aldp_hdr_byte_1;
 	uint8_t aldp_hdr_byte_2;
-	uint8_t aldp_payload[10];
+	uint8_t aldp_payload[];
 };
 
 struct SLDP_t_class

@@ -33,6 +33,8 @@
 EventGroupHandle_t xSettings;
 EventGroupHandle_t xStatus;
 
+
+
 TaskHandle_t SendTask;
 xQueueHandle xDataSendQueue;							// Daten zum Verpacken und Senden  (Daten von Cedi)
 
@@ -70,60 +72,65 @@ void vSendTask(void *pvParameters) {
 	for(;;) {
 		PORTF.OUTTGL = 0x01;	
 		if (uxQueueMessagesWaiting(xDataSendQueue) > 0) {
-			uibuffercounter = 0;
-
-//********** ALDP **********
-				uint8_t xoutBuffer[uxQueueMessagesWaiting(xDataSendQueue)+2];
-				xALDP_Paket = (struct ALDP_t_class *) &xoutBuffer[0];
+			
+//********** Daten aus Queue in Buffer speichern **********
+			uibuffercounter = 2;
+			uint8_t xSendQueueBuffer[uxQueueMessagesWaiting(xDataSendQueue)+2];
 						
 			while ((uxQueueMessagesWaiting(xDataSendQueue) > 0) && uibuffercounter < ANZSENDQUEUE ) {
 				uint8_t xoutBufferPointer;
-				
-				xQueueReceive(xDataSendQueue, &xoutBufferPointer , portMAX_DELAY);					// Umsetzung?? Pointer und struct 
-				
-				xoutBuffer[uibuffercounter+2] = xoutBufferPointer;
-				
-				
-				
-				xALDP_Paket->aldp_payload[uibuffercounter] = xoutBuffer[uibuffercounter+2];					// ausgelesener wert aus queue 
+				xQueueReceive(xDataSendQueue, &xoutBufferPointer , portMAX_DELAY);					 
+				xSendQueueBuffer[uibuffercounter] = xoutBufferPointer;
 				uibuffercounter++;
 			}
-			
+//********** ALDP Quelle in byte 1 **********
+			if ((xEventGroupGetBits(xSettings) & Settings_Source_Bit1) == 1) {
 				if ((xEventGroupGetBits(xSettings) & Settings_Source_Bit1) == 1) {
-					if ((xEventGroupGetBits(xSettings) & Settings_Source_Bit1) == 1) {
-						// UART
-						xALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_UART;
-					}
-					else {
-						// Testpattern
-						xALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_TEST;
-					}
+					// UART
+					xSendQueueBuffer[0] = ALDP_SRC_UART;
 				}
 				else {
-					if ((xEventGroupGetBits(xSettings) & Settings_Source_Bit1) == 1) {
-						// I2C
-						xALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_I2C;
-					}
-					else {
-						// n.a. (Error)
-						xALDP_Paket->aldp_hdr_byte_1 = ALDP_SRC_ERROR;
-					}
+					// Testpattern
+					xSendQueueBuffer[0] = ALDP_SRC_TEST;
 				}
+			}
+			else {
+				if ((xEventGroupGetBits(xSettings) & Settings_Source_Bit1) == 1) {
+					// I2C
+					xSendQueueBuffer[0] = ALDP_SRC_I2C;
+				}
+				else {
+					// n.a. (Error)
+					xSendQueueBuffer[0] = ALDP_SRC_ERROR;
+				}
+			}
 
-			xALDP_Paket->aldp_hdr_byte_2 = uibuffercounter;						// ALDP size
-		
-//******* SLDP *************
+//********** ALDP Size in byte 2 **********			
+			xSendQueueBuffer[1] = uibuffercounter-2;
 			
-		//	xSLDP_Paket.sldp_payload = xALDP_Paket;			// SLDP Payload
-			xSLDP_Paket.sldp_crc8 = 0x55;					// SLDP CRC8 als Trailer			TBD
-			xSLDP_Paket.sldp_size = uibuffercounter + 2;	// SLDP Size als Header
+	// Daten aus Queue sind nun im xSendQueueBuffer			
+				
+
+//********** ALDP und SLDP mit Daten befüllen **********				
+			xSLDP_Paket.sldp_size = sizeof(xSendQueueBuffer);
+			xSLDP_Paket.sldp_payload = &xSendQueueBuffer[0];
+			xALDP_Paket = (struct ALDP_t_class *) xSLDP_Paket.sldp_payload;
 			
-			vTaskDelay(50 / portTICK_RATE_MS);				// Delay 50ms
-			
-//******* SEND *************
+//******* SendeBuffer beschreiben *************
 			
 			//SLDP in buffer schreiben
+			uint8_t outBuffer[xSLDP_Paket.sldp_size + 2];
+			outBuffer[0] = xSLDP_Paket.sldp_size;
 
+			uint8_t i = 0;
+			for (i = 0; i != xSLDP_Paket.sldp_size; i++)	{
+				outBuffer[i + 1] = xSLDP_Paket.sldp_payload[i];
+			}
+			xSLDP_Paket.sldp_crc8 = 0x66;															// CRC8 berechnen!
+			outBuffer[xSLDP_Paket.sldp_size + 1] = xSLDP_Paket.sldp_crc8;			
+			
+			
+			vTaskDelay(50 / portTICK_RATE_MS);				// Delay 50ms
 		}
 	}
 }
