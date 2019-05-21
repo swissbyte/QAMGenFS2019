@@ -11,9 +11,18 @@
 #include "queue.h"
 #include "event_groups.h"
 #include "protokollhandler.h"
+#include "string.h"
 
+// KONSTANTEN
+#define ANZSENDQUEUE					253							// gemäss Definition im Dokument "ProtokollBeschreibung.pdf" von Claudio
+#define	PROTOKOLLBUFFERGROESSE			300
+// xQuelle
+#define PAKET_TYPE_ALDP					0x01
+#define ALDP_SRC_UART					0x00
+#define ALDP_SRC_I2C					0x01
+#define ALDP_SRC_TEST					0x02
+#define ALDP_SRC_ERROR					0xFF
 
-#define  ANZSENDQUEUE					253							// gemäss Definition im Dokument "ProtokollBeschreibung.pdf" von Claudio
 
 // xSettings
 #define Settings_QAM_Ordnung			1<<0
@@ -24,12 +33,9 @@
 #define Status_Error					1<<1
 #define Status_Daten_ready				1<<2
 #define Status_Daten_sending			1<<3
-// xQuelle
-#define PAKET_TYPE_ALDP					0x01
-#define ALDP_SRC_UART					0x00
-#define ALDP_SRC_I2C					0x01
-#define ALDP_SRC_TEST					0x02
-#define ALDP_SRC_ERROR					0xFF
+// xProtokollBufferStatus
+#define BUFFER_A						1<<0
+#define BUFFER_B						1<<1
 
 EventGroupHandle_t xSettings;							// Settings vom GUI von Cedi
 EventGroupHandle_t xStatus;								// auch irgendwas von Cedi
@@ -38,6 +44,10 @@ EventGroupHandle_t xProtokollBufferStatus;				// Eventbits für Status von Buffer
 
 TaskHandle_t SendTask;
 xQueueHandle xDataSendQueue;							// Daten zum Verpacken und Senden  (Daten von Cedi)
+
+//globale Variablen
+uint8_t uiglobalProtokollBuffer_A[PROTOKOLLBUFFERGROESSE];
+uint8_t uiglobalProtokollBuffer_B[PROTOKOLLBUFFERGROESSE];
 
 
 void vProtokollHandlerTask(void *pvParameters) {
@@ -55,7 +65,7 @@ void vProtokollHandlerTask(void *pvParameters) {
 	
 	uint8_t	uibuffercounter = 0;
 
-/*
+
 	// Debbuging	
 	uint8_t a = 10;
 	uint8_t b = 20;
@@ -68,7 +78,7 @@ void vProtokollHandlerTask(void *pvParameters) {
 	xQueueSendToBack(xDataSendQueue, &c, portMAX_DELAY);
 	xQueueSendToBack(xDataSendQueue, &d, portMAX_DELAY);
 	xQueueSendToBack(xDataSendQueue, &e, portMAX_DELAY);
-*/
+
 	
 	for(;;) {
 		PORTF.OUTTGL = 0x01;	
@@ -129,6 +139,14 @@ void vProtokollHandlerTask(void *pvParameters) {
 			}
 			xSLDP_Paket.sldp_crc8 = 0x66;															// CRC8 berechnen!
 			outBuffer[xSLDP_Paket.sldp_size + 1] = xSLDP_Paket.sldp_crc8;			
+			
+			
+			if ((xEventGroupGetBits(xSettings) & BUFFER_A) == 1) {
+				memcpy(uiglobalProtokollBuffer_A, outBuffer, xSLDP_Paket.sldp_size+2);
+				
+			}
+			
+			
 			
 			
 			vTaskDelay(50 / portTICK_RATE_MS);				// Delay 50ms
