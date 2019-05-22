@@ -23,7 +23,6 @@
 #define ALDP_SRC_TEST					0x02
 #define ALDP_SRC_ERROR					0xFF
 
-
 // xSettings
 #define Settings_QAM_Order				1<<0
 #define Settings_Source_Bit1			1<<1
@@ -76,15 +75,17 @@ void vProtokollHandlerTask(void *pvParameters) {
 	uint8_t d = 40;
 	uint8_t e = 50;
 
-	xQueueSendToBack(xDataSendQueue, &a, portMAX_DELAY);
-	xQueueSendToBack(xDataSendQueue, &b, portMAX_DELAY);
-	xQueueSendToBack(xDataSendQueue, &c, portMAX_DELAY);
-	xQueueSendToBack(xDataSendQueue, &d, portMAX_DELAY);
-	xQueueSendToBack(xDataSendQueue, &e, portMAX_DELAY);
-
 	
 	for(;;) {
-		PORTF.OUTTGL = 0x01;	
+		PORTF.OUTTGL = 0x01;
+		
+			xQueueSendToBack(xDataSendQueue, &a, portMAX_DELAY);
+			xQueueSendToBack(xDataSendQueue, &b, portMAX_DELAY);
+			xQueueSendToBack(xDataSendQueue, &c, portMAX_DELAY);
+			xQueueSendToBack(xDataSendQueue, &d, portMAX_DELAY);
+			xQueueSendToBack(xDataSendQueue, &e, portMAX_DELAY);
+		
+			
 		if (uxQueueMessagesWaiting(xDataSendQueue) > 0) {
 			
 //********** Daten aus Queue in Buffer speichern **********
@@ -146,28 +147,44 @@ void vProtokollHandlerTask(void *pvParameters) {
 			
 			xEventGroupSetBits(xProtocolBufferStatus, BUFFER_A_freetouse);									// Debugging
 			
-			if ((xEventGroupGetBits(xProtocolBufferStatus) & BUFFER_A_freetouse))
+			if ((xEventGroupGetBits(xProtocolBufferStatus) & BUFFER_A_freetouse))											// Buffer A bereit?
 			{
-				xEventGroupClearBits(xProtocolBufferStatus, BUFFER_A_freetouse);
-				memcpy(ucglobalProtocollBuffer_A, ucOutBuffer, sizeof(ucOutBuffer));
-				xEventGroupSetBits(xProtocolBufferStatus, BUFFER_A_freetouse);	
+				if ((ucProtocollBuffer_A_Counter+xSLDP_Paket.sldp_size + 2) < PROTOCOLBUFFERSIZE )							// droht Buffer A overflow?	
+				{
+					xEventGroupClearBits(xProtocolBufferStatus, BUFFER_A_freetouse);										// Buffer A sperren
+					memcpy(ucglobalProtocollBuffer_A+ucProtocollBuffer_A_Counter, ucOutBuffer, sizeof(ucOutBuffer));		// Daten in Buffer A kopieren
+					xEventGroupSetBits(xProtocolBufferStatus, BUFFER_A_freetouse);											// Buffer A freigeben
+					ucProtocollBuffer_A_Counter += xSLDP_Paket.sldp_size + 2;
+				}
+				else
+				{
+					// Daten verwerfen
+				}
 			} 
 			else 
 			{
-				if ((xEventGroupGetBits(xProtocolBufferStatus) & BUFFER_B_freetouse)) 
+				if ((xEventGroupGetBits(xProtocolBufferStatus) & BUFFER_B_freetouse))										// Buffer B bereit?
 				{
-					xEventGroupClearBits(xProtocolBufferStatus, BUFFER_B_freetouse);
-					memcpy(ucglobalProtocollBuffer_B, ucOutBuffer, sizeof(ucOutBuffer));
-					xEventGroupSetBits(xProtocolBufferStatus, BUFFER_B_freetouse);
+					if ((ucProtocollBuffer_B_Counter+xSLDP_Paket.sldp_size + 2) > PROTOCOLBUFFERSIZE )						// droht Buffer B overflow?
+					{
+						xEventGroupClearBits(xProtocolBufferStatus, BUFFER_B_freetouse);									// Buffer B sperren
+						memcpy(ucglobalProtocollBuffer_B+ucProtocollBuffer_B_Counter, ucOutBuffer, sizeof(ucOutBuffer));	// Daten in Buffer B kopieren
+						xEventGroupSetBits(xProtocolBufferStatus, BUFFER_B_freetouse);										// Buffer B freigeben
+						ucProtocollBuffer_B_Counter += xSLDP_Paket.sldp_size + 2;
+					}
+					else
+					{
+						// Daten verwerfen (Error)
+					}
 				}
 				else
 				{
 							// n.a. (Error)															/ Error ausgeben
 				}
-			}
 				
-			
-			vTaskDelay(50 / portTICK_RATE_MS);				// Delay 50ms
+			}
 		}
+	
+	vTaskDelay(50 / portTICK_RATE_MS);				// Delay 50ms
 	}
 }
