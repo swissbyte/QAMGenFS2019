@@ -14,8 +14,8 @@
 #include "string.h"
 
 // KONSTANTEN
-#define ANZSENDQUEUE					253							// gemäss Definition im Dokument "ProtokollBeschreibung.pdf" von Claudio
-#define	PROTOCOLBUFFERSIZE				300
+#define ANZSENDQUEUE					32							// gemäss Definition im Dokument "ProtokollBeschreibung.pdf" von Claudio
+#define	PROTOCOLBUFFERSIZE				32
 // xQuelle
 #define PAKET_TYPE_ALDP					0x01
 #define ALDP_SRC_UART					0x00
@@ -46,8 +46,8 @@ TaskHandle_t SendTask;
 xQueueHandle xDataSendQueue;							// Daten zum Verpacken und Senden  (Daten von Cedi)
 
 //globale Variablen
-uint8_t ucglobalProtocollBuffer_A[PROTOCOLBUFFERSIZE];
-uint8_t ucglobalProtocollBuffer_B[PROTOCOLBUFFERSIZE];
+uint8_t ucglobalProtocollBuffer_A[PROTOCOLBUFFERSIZE] = {};
+uint8_t ucglobalProtocollBuffer_B[PROTOCOLBUFFERSIZE] = {};
 
 
 void vProtokollHandlerTask(void *pvParameters) {
@@ -65,7 +65,9 @@ void vProtokollHandlerTask(void *pvParameters) {
 	xProtocolBufferStatus = xEventGroupCreate();
 	
 	uint8_t	ucbuffercounter = 0;
-
+	
+	uint8_t ucProtocollBuffer_A_Counter = 0;
+	uint8_t ucProtocollBuffer_B_Counter = 0;
 
 	// Debbuging	
 	uint8_t a = 10;
@@ -126,13 +128,9 @@ void vProtokollHandlerTask(void *pvParameters) {
 //********** ALDP und SLDP mit Daten befüllen **********				
 			xSLDP_Paket.sldp_size = sizeof(xSendQueueBuffer);
 			xSLDP_Paket.sldp_payload = &xSendQueueBuffer[0];
-			xALDP_Paket = (struct ALDP_t_class *) xSLDP_Paket.sldp_payload;
+			xALDP_Paket = (struct ALDP_t_class *) xSLDP_Paket.sldp_payload;		
 			
-//******* SendeBuffer beschreiben *************
-			
-			
-			uint8_t ucOutBuffer[11];																	// Debugging
-			//uint8_t outBuffer[xSLDP_Paket.sldp_size + 2];											// WARUM GEHT DAS NICHT???
+			uint8_t ucOutBuffer[xSLDP_Paket.sldp_size + 2];
 			ucOutBuffer[0] = xSLDP_Paket.sldp_size;
 
 			uint8_t i = 0;
@@ -141,6 +139,10 @@ void vProtokollHandlerTask(void *pvParameters) {
 			}
 			xSLDP_Paket.sldp_crc8 = 0x66;															// CRC8 berechnen!
 			ucOutBuffer[xSLDP_Paket.sldp_size + 1] = xSLDP_Paket.sldp_crc8;			
+			
+			
+			
+	//******* SendeBuffer beschreiben *************		
 			
 			xEventGroupSetBits(xProtocolBufferStatus, BUFFER_A_freetouse);									// Debugging
 			
