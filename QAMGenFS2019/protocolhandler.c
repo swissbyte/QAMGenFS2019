@@ -67,27 +67,29 @@ void vProtokollHandlerTask(void *pvParameters) {
 	uint8_t ucProtocolBuffer_A_Counter = 1;
 	uint8_t ucProtocolBuffer_B_Counter = 1;
 
-	// Debbuging	
-	uint8_t a = 10;
-	uint8_t b = 20;
-	uint8_t c = 30;
-	uint8_t d = 40;
-	uint8_t e = 50;
+	
 
 	
 	for(;;) {
 		PORTF.OUTTGL = 0x01;
 		
+			// Debbuging
+			uint8_t a = 10;
+			uint8_t b = 20;
+			uint8_t c = 30;
+			uint8_t d = 40;
+			uint8_t e = 50;
+			
 			xQueueSendToBack(xALDPQueue, &a, portMAX_DELAY);
 			xQueueSendToBack(xALDPQueue, &b, portMAX_DELAY);
 			xQueueSendToBack(xALDPQueue, &c, portMAX_DELAY);
 			xQueueSendToBack(xALDPQueue, &d, portMAX_DELAY);
 			xQueueSendToBack(xALDPQueue, &e, portMAX_DELAY);
-		
+			//===================================================
 			
 		if (uxQueueMessagesWaiting(xALDPQueue) > 0) {
 			
-//********** Daten aus Queue in Buffer speichern **********
+//*********** save data from Queue into Buffer **********
 			ucbuffercounter = 2;
 			uint8_t xSendQueueBuffer[uxQueueMessagesWaiting(xALDPQueue)+2];
 						
@@ -97,7 +99,7 @@ void vProtokollHandlerTask(void *pvParameters) {
 				xSendQueueBuffer[ucbuffercounter] = xoutBufferPointer;
 				ucbuffercounter++;
 			}
-//********** ALDP Quelle in byte 1 **********
+//********** ALDP Source in byte 1 **********
 			if ((xEventGroupGetBits(xSettings) & Settings_Source_Bit1)) {
 				if ((xEventGroupGetBits(xSettings) & Settings_Source_Bit1)) {
 					// UART
@@ -120,12 +122,10 @@ void vProtokollHandlerTask(void *pvParameters) {
 			}
 
 //********** ALDP Size in byte 2 **********			
-			xSendQueueBuffer[1] = ucbuffercounter-2;
-			
-	// Daten aus Queue sind nun im xSendQueueBuffer			
+			xSendQueueBuffer[1] = ucbuffercounter-2;		
 				
 
-//********** ALDP und SLDP mit Daten befüllen **********				
+//********** ALDP und SLDP **********				
 			xSLDP_Paket.sldp_size = sizeof(xSendQueueBuffer);
 			xSLDP_Paket.sldp_payload = &xSendQueueBuffer[0];
 			xALDP_Paket = (struct ALDP_t_class *) xSLDP_Paket.sldp_payload;		
@@ -137,14 +137,14 @@ void vProtokollHandlerTask(void *pvParameters) {
 			for (i = 0; i != xSLDP_Paket.sldp_size; i++)	{
 				ucOutBuffer[i + 1] = xSLDP_Paket.sldp_payload[i];
 			}
-			xSLDP_Paket.sldp_crc8 = 0x66;															// CRC8 berechnen!
+			xSLDP_Paket.sldp_crc8 = 0x66;																					// CRC8 berechnen!
 			ucOutBuffer[xSLDP_Paket.sldp_size + 1] = xSLDP_Paket.sldp_crc8;			
 			
 			
 			
-	//******* SendeBuffer beschreiben *************		
+	//******* Copy Data into global Sendbuffer *************		
 			
-			xEventGroupSetBits(xProtocolBufferStatus, BUFFER_A_freetouse);									// Debugging
+			xEventGroupSetBits(xProtocolBufferStatus, BUFFER_A_freetouse);							// ***Debugging***
 			
 			if ((xEventGroupGetBits(xProtocolBufferStatus) & BUFFER_A_freetouse))											// Buffer A ready?
 			{
@@ -158,7 +158,7 @@ void vProtokollHandlerTask(void *pvParameters) {
 				}
 				else
 				{
-					// Daten verwerfen
+					// Daten verwerfen (Error)
 				}
 			} 
 			else 
