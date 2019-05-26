@@ -14,7 +14,7 @@
 #include "string.h"
 
 // KONSTANTEN
-#define ANZSENDQUEUE					32							// gemäss Definition im Dokument "ProtokollBeschreibung.pdf" von Claudio
+#define ANZSENDQUEUE					32							// according to document "ProtokollBeschreibung.pdf" from Claudio
 #define	PROTOCOLBUFFERSIZE				32
 // xQuelle
 #define PAKET_TYPE_ALDP					0x01
@@ -36,17 +36,16 @@
 #define BUFFER_A_freetouse				1<<0
 #define BUFFER_B_freetouse				1<<1
 
-EventGroupHandle_t xSettings;							// Settings vom GUI von Cedi
-EventGroupHandle_t xStatus;								// auch irgendwas von Cedi
+EventGroupHandle_t xSettings;							// Settings from GUI
+EventGroupHandle_t xStatus;								// something from Cedi
 
-EventGroupHandle_t xProtocolBufferStatus;				// Eventbits für Status von Buffer von Protokoll-Task zu Modulator-Task
+EventGroupHandle_t xProtocolBufferStatus;				// Eventbits Bufferstatus from Protocol-Task to Modulator-Task
 
-TaskHandle_t SendTask;
-xQueueHandle xDataSendQueue;							// Daten zum Verpacken und Senden  (Daten von Cedi)
+xQueueHandle xALDPQueue;							// Data to pack and send
 
 //globale Variablen
-uint8_t ucglobalProtocollBuffer_A[PROTOCOLBUFFERSIZE] = {};
-uint8_t ucglobalProtocollBuffer_B[PROTOCOLBUFFERSIZE] = {};
+uint8_t ucglobalProtocolBuffer_A[PROTOCOLBUFFERSIZE] = {};
+uint8_t ucglobalProtocolBuffer_B[PROTOCOLBUFFERSIZE] = {};
 
 
 void vProtokollHandlerTask(void *pvParameters) {
@@ -59,14 +58,14 @@ void vProtokollHandlerTask(void *pvParameters) {
 	PORTF.DIRSET = PIN0_bm; /*LED1*/
 	PORTF.OUT = 0x01;
 	
-	xDataSendQueue = xQueueCreate(ANZSENDQUEUE, sizeof(uint8_t));
+	xALDPQueue = xQueueCreate(ANZSENDQUEUE, sizeof(uint8_t));
 
 	xProtocolBufferStatus = xEventGroupCreate();
 	
 	uint8_t	ucbuffercounter = 0;
 	
-	uint8_t ucProtocollBuffer_A_Counter = 0;
-	uint8_t ucProtocollBuffer_B_Counter = 0;
+	uint8_t ucProtocolBuffer_A_Counter = 1;
+	uint8_t ucProtocolBuffer_B_Counter = 1;
 
 	// Debbuging	
 	uint8_t a = 10;
@@ -79,22 +78,22 @@ void vProtokollHandlerTask(void *pvParameters) {
 	for(;;) {
 		PORTF.OUTTGL = 0x01;
 		
-			xQueueSendToBack(xDataSendQueue, &a, portMAX_DELAY);
-			xQueueSendToBack(xDataSendQueue, &b, portMAX_DELAY);
-			xQueueSendToBack(xDataSendQueue, &c, portMAX_DELAY);
-			xQueueSendToBack(xDataSendQueue, &d, portMAX_DELAY);
-			xQueueSendToBack(xDataSendQueue, &e, portMAX_DELAY);
+			xQueueSendToBack(xALDPQueue, &a, portMAX_DELAY);
+			xQueueSendToBack(xALDPQueue, &b, portMAX_DELAY);
+			xQueueSendToBack(xALDPQueue, &c, portMAX_DELAY);
+			xQueueSendToBack(xALDPQueue, &d, portMAX_DELAY);
+			xQueueSendToBack(xALDPQueue, &e, portMAX_DELAY);
 		
 			
-		if (uxQueueMessagesWaiting(xDataSendQueue) > 0) {
+		if (uxQueueMessagesWaiting(xALDPQueue) > 0) {
 			
 //********** Daten aus Queue in Buffer speichern **********
 			ucbuffercounter = 2;
-			uint8_t xSendQueueBuffer[uxQueueMessagesWaiting(xDataSendQueue)+2];
+			uint8_t xSendQueueBuffer[uxQueueMessagesWaiting(xALDPQueue)+2];
 						
-			while ((uxQueueMessagesWaiting(xDataSendQueue) > 0) && ucbuffercounter < ANZSENDQUEUE ) {
+			while ((uxQueueMessagesWaiting(xALDPQueue) > 0) && ucbuffercounter < ANZSENDQUEUE ) {
 				uint8_t xoutBufferPointer;
-				xQueueReceive(xDataSendQueue, &xoutBufferPointer , portMAX_DELAY);					 
+				xQueueReceive(xALDPQueue, &xoutBufferPointer , portMAX_DELAY);					 
 				xSendQueueBuffer[ucbuffercounter] = xoutBufferPointer;
 				ucbuffercounter++;
 			}
@@ -147,14 +146,15 @@ void vProtokollHandlerTask(void *pvParameters) {
 			
 			xEventGroupSetBits(xProtocolBufferStatus, BUFFER_A_freetouse);									// Debugging
 			
-			if ((xEventGroupGetBits(xProtocolBufferStatus) & BUFFER_A_freetouse))											// Buffer A bereit?
+			if ((xEventGroupGetBits(xProtocolBufferStatus) & BUFFER_A_freetouse))											// Buffer A ready?
 			{
-				if ((ucProtocollBuffer_A_Counter+xSLDP_Paket.sldp_size + 2) < PROTOCOLBUFFERSIZE )							// droht Buffer A overflow?	
+				if ((ucProtocolBuffer_A_Counter+xSLDP_Paket.sldp_size + 2) < PROTOCOLBUFFERSIZE )							// Buffer A overflow?	
 				{
-					xEventGroupClearBits(xProtocolBufferStatus, BUFFER_A_freetouse);										// Buffer A sperren
-					memcpy(ucglobalProtocollBuffer_A+ucProtocollBuffer_A_Counter, ucOutBuffer, sizeof(ucOutBuffer));		// Daten in Buffer A kopieren
-					xEventGroupSetBits(xProtocolBufferStatus, BUFFER_A_freetouse);											// Buffer A freigeben
-					ucProtocollBuffer_A_Counter += xSLDP_Paket.sldp_size + 2;
+					xEventGroupClearBits(xProtocolBufferStatus, BUFFER_A_freetouse);										// Buffer A lock
+					memcpy(ucglobalProtocolBuffer_A + ucProtocolBuffer_A_Counter, ucOutBuffer, sizeof(ucOutBuffer));		// copy the Data into Buffer A
+					ucglobalProtocolBuffer_A[0] = ucProtocolBuffer_A_Counter+xSLDP_Paket.sldp_size + 2;
+					xEventGroupSetBits(xProtocolBufferStatus, BUFFER_A_freetouse);											// Buffer A release
+					ucProtocolBuffer_A_Counter += xSLDP_Paket.sldp_size + 2;
 				}
 				else
 				{
@@ -163,14 +163,15 @@ void vProtokollHandlerTask(void *pvParameters) {
 			} 
 			else 
 			{
-				if ((xEventGroupGetBits(xProtocolBufferStatus) & BUFFER_B_freetouse))										// Buffer B bereit?
+				if ((xEventGroupGetBits(xProtocolBufferStatus) & BUFFER_B_freetouse))										// Buffer B ready?
 				{
-					if ((ucProtocollBuffer_B_Counter+xSLDP_Paket.sldp_size + 2) > PROTOCOLBUFFERSIZE )						// droht Buffer B overflow?
+					if ((ucProtocolBuffer_B_Counter+xSLDP_Paket.sldp_size + 2) > PROTOCOLBUFFERSIZE )						// Buffer B overflow?
 					{
-						xEventGroupClearBits(xProtocolBufferStatus, BUFFER_B_freetouse);									// Buffer B sperren
-						memcpy(ucglobalProtocollBuffer_B+ucProtocollBuffer_B_Counter, ucOutBuffer, sizeof(ucOutBuffer));	// Daten in Buffer B kopieren
-						xEventGroupSetBits(xProtocolBufferStatus, BUFFER_B_freetouse);										// Buffer B freigeben
-						ucProtocollBuffer_B_Counter += xSLDP_Paket.sldp_size + 2;
+						xEventGroupClearBits(xProtocolBufferStatus, BUFFER_B_freetouse);									// Buffer B lock
+						memcpy(ucglobalProtocolBuffer_B + ucProtocolBuffer_B_Counter, ucOutBuffer, sizeof(ucOutBuffer));	// copy the Data into Buffer B
+						ucglobalProtocolBuffer_B[0] = ucProtocolBuffer_B_Counter+xSLDP_Paket.sldp_size + 2;
+						xEventGroupSetBits(xProtocolBufferStatus, BUFFER_B_freetouse);										// Buffer B release
+						ucProtocolBuffer_B_Counter += xSLDP_Paket.sldp_size + 2;
 					}
 					else
 					{
