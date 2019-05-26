@@ -35,6 +35,9 @@
 // xProtocolBufferStatus
 #define BUFFER_A_freetouse				1<<0
 #define BUFFER_B_freetouse				1<<1
+// Buffer
+#define ACTIVEBUFFER_A					0
+#define ACTIVEBUFFER_B					1
 
 EventGroupHandle_t xSettings;							// Settings from GUI
 EventGroupHandle_t xStatus;								// something from Cedi
@@ -66,14 +69,17 @@ void vProtokollHandlerTask(void *pvParameters) {
 	
 	uint8_t ucProtocolBuffer_A_Counter = 1;
 	uint8_t ucProtocolBuffer_B_Counter = 1;
-
 	
+	uint8_t ucactiveBuffer = ACTIVEBUFFER_A;
+	xEventGroupSetBits(xProtocolBufferStatus, BUFFER_A_freetouse);		// Start with Buffer A
+	xEventGroupSetBits(xProtocolBufferStatus, BUFFER_B_freetouse);		// Start with Buffer A
+
 
 	
 	for(;;) {
 		PORTF.OUTTGL = 0x01;
 		
-			// Debbuging
+/*			// Debbuging
 			uint8_t a = 10;
 			uint8_t b = 20;
 			uint8_t c = 30;
@@ -86,6 +92,7 @@ void vProtokollHandlerTask(void *pvParameters) {
 			xQueueSendToBack(xALDPQueue, &d, portMAX_DELAY);
 			xQueueSendToBack(xALDPQueue, &e, portMAX_DELAY);
 			//===================================================
+*/
 			
 		if (uxQueueMessagesWaiting(xALDPQueue) > 0) {
 			
@@ -137,55 +144,43 @@ void vProtokollHandlerTask(void *pvParameters) {
 			for (i = 0; i != xSLDP_Paket.sldp_size; i++)	{
 				ucOutBuffer[i + 1] = xSLDP_Paket.sldp_payload[i];
 			}
-			xSLDP_Paket.sldp_crc8 = 0x66;																					// CRC8 berechnen!
+			xSLDP_Paket.sldp_crc8 = 0x66;																					// CRC8 muss noch berechnet werden! TODO
 			ucOutBuffer[xSLDP_Paket.sldp_size + 1] = xSLDP_Paket.sldp_crc8;			
 			
 			
-			
+	//******* Sendbuffer-handler *************				
+			if ((ucactiveBuffer == ACTIVEBUFFER_A) && ((ucProtocolBuffer_A_Counter+xSLDP_Paket.sldp_size + 2) > PROTOCOLBUFFERSIZE )) {		// Buffer A overflow?
+					ucactiveBuffer = ACTIVEBUFFER_B;
+					ucProtocolBuffer_B_Counter = 1;																								//Buffer switch from A to B
+			}
+			if ((ucactiveBuffer == ACTIVEBUFFER_B) && ((ucProtocolBuffer_B_Counter+xSLDP_Paket.sldp_size + 2) > PROTOCOLBUFFERSIZE )) {		// Buffer B overflow?
+					ucactiveBuffer = ACTIVEBUFFER_A;	
+					ucProtocolBuffer_A_Counter = 1;																								//Buffer switch from B to A
+			}
+
+	
+	
 	//******* Copy Data into global Sendbuffer *************		
 			
-			xEventGroupSetBits(xProtocolBufferStatus, BUFFER_A_freetouse);							// ***Debugging***
-			
-			if ((xEventGroupGetBits(xProtocolBufferStatus) & BUFFER_A_freetouse))											// Buffer A ready?
-			{
-				if ((ucProtocolBuffer_A_Counter+xSLDP_Paket.sldp_size + 2) < PROTOCOLBUFFERSIZE )							// Buffer A overflow?	
-				{
-					xEventGroupClearBits(xProtocolBufferStatus, BUFFER_A_freetouse);										// Buffer A lock
-					memcpy(ucglobalProtocolBuffer_A + ucProtocolBuffer_A_Counter, ucOutBuffer, sizeof(ucOutBuffer));		// copy the Data into Buffer A
-					ucglobalProtocolBuffer_A[0] = ucProtocolBuffer_A_Counter+xSLDP_Paket.sldp_size + 2;
-					xEventGroupSetBits(xProtocolBufferStatus, BUFFER_A_freetouse);											// Buffer A release
-					ucProtocolBuffer_A_Counter += xSLDP_Paket.sldp_size + 2;
-				}
-				else
-				{
-					// Daten verwerfen (Error)
-				}
-			} 
-			else 
-			{
-				if ((xEventGroupGetBits(xProtocolBufferStatus) & BUFFER_B_freetouse))										// Buffer B ready?
-				{
-					if ((ucProtocolBuffer_B_Counter+xSLDP_Paket.sldp_size + 2) > PROTOCOLBUFFERSIZE )						// Buffer B overflow?
-					{
-						xEventGroupClearBits(xProtocolBufferStatus, BUFFER_B_freetouse);									// Buffer B lock
-						memcpy(ucglobalProtocolBuffer_B + ucProtocolBuffer_B_Counter, ucOutBuffer, sizeof(ucOutBuffer));	// copy the Data into Buffer B
-						ucglobalProtocolBuffer_B[0] = ucProtocolBuffer_B_Counter+xSLDP_Paket.sldp_size + 2;
-						xEventGroupSetBits(xProtocolBufferStatus, BUFFER_B_freetouse);										// Buffer B release
-						ucProtocolBuffer_B_Counter += xSLDP_Paket.sldp_size + 2;
-					}
-					else
-					{
-						// Daten verwerfen (Error)
-					}
-				}
-				else
-				{
-							// n.a. (Error)															/ Error ausgeben
-				}
+			if (ucactiveBuffer == ACTIVEBUFFER_A) {
+				xEventGroupWaitBits(xProtocolBufferStatus, BUFFER_A_freetouse, pdTRUE, pdFALSE, portMAX_DELAY);					// wait for Buffer A
+				memcpy(ucglobalProtocolBuffer_A + ucProtocolBuffer_A_Counter, ucOutBuffer, sizeof(ucOutBuffer));				// copy the Data into Buffer A
+				ucglobalProtocolBuffer_A[0] = ucProtocolBuffer_A_Counter+xSLDP_Paket.sldp_size + 2;
+				xEventGroupSetBits(xProtocolBufferStatus, BUFFER_A_freetouse);													// Buffer A release
+				ucProtocolBuffer_A_Counter += xSLDP_Paket.sldp_size + 2;
 				
 			}
+			
+			else if (ucactiveBuffer == ACTIVEBUFFER_B) {
+				xEventGroupWaitBits(xProtocolBufferStatus, BUFFER_B_freetouse, pdTRUE, pdFALSE, portMAX_DELAY);					// wait for Buffer A
+				memcpy(ucglobalProtocolBuffer_B + ucProtocolBuffer_B_Counter, ucOutBuffer, sizeof(ucOutBuffer));			// copy the Data into Buffer B
+				ucglobalProtocolBuffer_B[0] = ucProtocolBuffer_B_Counter+xSLDP_Paket.sldp_size + 2;
+				xEventGroupSetBits(xProtocolBufferStatus, BUFFER_B_freetouse);												// Buffer B release
+				ucProtocolBuffer_B_Counter += xSLDP_Paket.sldp_size + 2;
+			}
+			
 		}
 	
-	vTaskDelay(50 / portTICK_RATE_MS);				// Delay 50ms
+		vTaskDelay(200 / portTICK_RATE_MS);				// Delay 200ms
 	}
 }
