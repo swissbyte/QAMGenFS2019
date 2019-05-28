@@ -1,8 +1,8 @@
 /*
- * dma.h
+ * outputManagement.h
  *
- * Created: 05.04.2019 09:24:42
- *  Author: Claudio Hediger
+ *  @version 1.0
+ *  @author Claudio Hediger, Michael Meier
  */ 
 
 
@@ -19,16 +19,16 @@ void vStartQAMTransfer();
 #define QAM_4_SYM_10	16
 #define QAM_4_SYM_11	24
 
-uint8_t qamSymbols[8];
-volatile uint8_t qamSymbolCount;
+uint8_t ucqamSymbols[8];
+volatile uint8_t ucqamSymbolCount;
 
 
 
 
-volatile uint8_t buffer_a[2048];
-volatile uint8_t buffer_b[2048];
+volatile uint8_t ucbuffer_a[2048];
+volatile uint8_t ucbuffer_b[2048];
 
-uint8_t nextLUTOffset;
+uint8_t ucnextLUTOffset;
 
 
 #endif /* DMA_H_ */

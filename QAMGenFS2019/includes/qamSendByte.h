@@ -1,8 +1,8 @@
 /*
- * tasks.h
+ * qamSendByte.h
  *
- * Created: 05.04.2019 09:05:34
- *  Author: Claudio Hediger
+ *  @version 1.0
+ *  @author Claudio Hediger, Michael Meier
  */ 
 
 

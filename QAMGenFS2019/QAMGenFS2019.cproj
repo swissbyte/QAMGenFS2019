@@ -156,9 +156,6 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="dma.c">
-      <SubType>compile</SubType>
-    </Compile>
     <Compile Include="driver\clksys_driver.c">
       <SubType>compile</SubType>
     </Compile>
@@ -270,9 +267,6 @@
     <Compile Include="includes\avr_compiler.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="includes\dma.h">
-      <SubType>compile</SubType>
-    </Compile>
     <Compile Include="includes\errorHandler.h">
       <SubType>compile</SubType>
     </Compile>
@@ -288,7 +282,10 @@
     <Compile Include="includes\NHD0420Driver.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="includes\tasks.h">
+    <Compile Include="includes\outputManagement.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="includes\qamSendByte.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="includes\utils.h">
@@ -306,7 +303,10 @@
     <Compile Include="NHD0420Driver.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="tasks.c">
+    <Compile Include="outputManagement.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="qamSendByte.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="utils.c">
