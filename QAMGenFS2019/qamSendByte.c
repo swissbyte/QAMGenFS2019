@@ -1,4 +1,3 @@
-
 /*
  * qamSendByte.c
  *
@@ -15,19 +14,26 @@
 
 EventGroupHandle_t xDMAProcessEventGroup;
 
-void ucqamSendByte(uint8_t ucbyte)
+void ucqamSendByte(uint8_t ucByte)
 {
 	/**
      * Teilt das Byte in 4 Symbole und speichert diese im Buffer
      */
-	uint8_t ucqamLUT[4] = {0,8,16,24};
-	uint8_t ucsymbol = 0;
+	uint8_t ucQamLUT[4] = {0,8,16,24};
+	uint8_t ucSymbol = 0;
 	
-	for (ucsymbol=0; ucsymbol!=4; ucsymbol ++)
+	for (ucSymbol=0; ucSymbol!=4; ucSymbol ++)
 	{
-		ucqamSymbols[ucsymbol] = ucqamLUT[(ucbyte >> (2 * ucsymbol))  & 0x03];
+		if(ucActivebuffer)
+		{
+		ucQamSymbolsbufferB[ucSymbol] = ucQamLUT[(ucByte >> (2 * ucSymbol))  & 0x03];
+		}
+		else
+		{
+		ucQamSymbolsbufferA[ucSymbol] = ucQamLUT[(ucByte >> (2 * ucSymbol))  & 0x03];
+		}
 	}
-	ucqamSymbolCount = 3;	
+	ucQamSymbolCount = 3;	
 }
 
 void vTask_DMAHandler(void *pvParameters) 
@@ -40,21 +46,15 @@ void vTask_DMAHandler(void *pvParameters)
 	vSetDMA_LUT_Offset();
 	while(1)
 	{
-		uxBits = xEventGroupWaitBits(
-		xDMAProcessEventGroup,   
-		DMA_EVT_GRP_QAM_FINISHED, 
-		pdTRUE,       
-		pdFALSE,   
-		portMAX_DELAY );
-			
-		
-		if(uxBits & DMA_EVT_GRP_QAM_FINISHED)
+		//uxBits = xEventGroupWaitBits(xDMAProcessEventGroup,	DMA_EVT_GRP_QAM_FINISHED, pdTRUE, pdFALSE, portMAX_DELAY);
+					
+		if(DMA_EVT_GRP_QAM_FINISHED && ucQamBlockTransfer==0)
 		{
 		
 			PORTF.OUT = (PORTF.OUT & (0xFF - 0x02));
 			PORTF.OUT |= 0x04;
 			
-			ucqamSendByte(0x00);
+			ucqamSendByte(0xcc);
 			vStartQAMTransfer();			
 		}
 

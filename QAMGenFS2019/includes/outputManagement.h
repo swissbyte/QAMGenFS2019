@@ -19,16 +19,20 @@ void vStartQAMTransfer();
 #define QAM_4_SYM_10	16
 #define QAM_4_SYM_11	24
 
-uint8_t ucqamSymbols[8];
-volatile uint8_t ucqamSymbolCount;
+uint8_t ucQamSymbolsbufferA[8];
+uint8_t ucQamSymbolsbufferB[8];
+uint8_t ucActivebuffer;
+volatile uint8_t ucQamBlockTransfer;
+
+volatile uint8_t ucQamSymbolCount;
 
 
 
 
-volatile uint8_t ucbuffer_a[2048];
-volatile uint8_t ucbuffer_b[2048];
+volatile uint8_t ucBuffer_a[2048];
+volatile uint8_t ucBuffer_b[2048];
 
-uint8_t ucnextLUTOffset;
+uint8_t ucNextLUTOffset;
 
 
 #endif /* DMA_H_ */
