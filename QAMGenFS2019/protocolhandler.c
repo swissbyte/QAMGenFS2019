@@ -51,7 +51,7 @@ uint8_t ucglobalProtocolBuffer_A[ PROTOCOLBUFFERSIZE ] = {};
 uint8_t ucglobalProtocolBuffer_B[ PROTOCOLBUFFERSIZE ] = {};
 
 
-void vProtokollHandlerTask(void *pvParameters) {
+void vProtokollHandlerTask( void *pvParameters ) {
 	(void) pvParameters;
 	
 	struct ALDP_t_class *xALDP_Paket;
@@ -74,8 +74,8 @@ void vProtokollHandlerTask(void *pvParameters) {
 	uint8_t ucActiveBuffer = ACTIVEBUFFER_A;
 
 /*	Debbuging
-	xEventGroupSetBits(xProtocolBufferStatus, BUFFER_A_freetouse);		// Start with Buffer A
-	xEventGroupSetBits(xProtocolBufferStatus, BUFFER_B_freetouse);		// Start with Buffer A
+	xEventGroupSetBits( xProtocolBufferStatus, BUFFER_A_freetouse );		// Start with Buffer A
+	xEventGroupSetBits( xProtocolBufferStatus, BUFFER_B_freetouse );		// Start with Buffer A
 */
 	
 	for(;;) {
@@ -94,7 +94,6 @@ void vProtokollHandlerTask(void *pvParameters) {
 			xQueueSendToBack(xALDPQueue, &c, portMAX_DELAY);
 			xQueueSendToBack(xALDPQueue, &d, portMAX_DELAY);
 			xQueueSendToBack(xALDPQueue, &e, portMAX_DELAY);
-			//===================================================
 */
 			
 		if (uxQueueMessagesWaiting( xALDPQueue ) > 0) {
@@ -103,65 +102,64 @@ void vProtokollHandlerTask(void *pvParameters) {
 			ucbuffercounter = 2;
 			uint8_t xSendQueueBuffer[ uxQueueMessagesWaiting( xALDPQueue ) +2 ];
 						
-			while ( ( uxQueueMessagesWaiting( xALDPQueue ) > 0 ) && (ucbuffercounter < ANZSENDQUEUE ) ) {
+			while( ( uxQueueMessagesWaiting( xALDPQueue ) > 0 ) && (ucbuffercounter < ANZSENDQUEUE ) ) {
 				uint8_t xoutBufferPointer;
-				xQueueReceive(xALDPQueue, &xoutBufferPointer , portMAX_DELAY);					 
-				xSendQueueBuffer[ucbuffercounter] = xoutBufferPointer;
+				xQueueReceive( xALDPQueue, &xoutBufferPointer , portMAX_DELAY );					 
+				xSendQueueBuffer[ ucbuffercounter ] = xoutBufferPointer;
 				ucbuffercounter++;
 			}
 /* ALDP Source in byte 1 */
-			if ((xEventGroupGetBits(xSettings) & Settings_Source_Bit1)) {
-				if ((xEventGroupGetBits(xSettings) & Settings_Source_Bit1)) {
+			if( ( xEventGroupGetBits( xSettings ) & Settings_Source_Bit1 ) ) {
+				if( ( xEventGroupGetBits( xSettings ) & Settings_Source_Bit1 ) ) {
 					// UART
-					xSendQueueBuffer[0] = ALDP_SRC_UART;
+					xSendQueueBuffer [0 ] = ALDP_SRC_UART;
 				}
 				else {
 					// Testpattern
-					xSendQueueBuffer[0] = ALDP_SRC_TEST;
+					xSendQueueBuffer[ 0 ] = ALDP_SRC_TEST;
 				}
 			}
 			else {
-				if ((xEventGroupGetBits(xSettings) & Settings_Source_Bit1)) {
+				if( ( xEventGroupGetBits( xSettings ) & Settings_Source_Bit1 ) ) {
 					// I2C
-					xSendQueueBuffer[0] = ALDP_SRC_I2C;
+					xSendQueueBuffer[ 0 ] = ALDP_SRC_I2C;
 				}
 				else {
 					// n.a. (Error)
-					xSendQueueBuffer[0] = ALDP_SRC_ERROR;
+					xSendQueueBuffer[ 0 ] = ALDP_SRC_ERROR;
 				}
 			}
 
 /* ALDP Size in byte 2 */
-			xSendQueueBuffer[1] = ucbuffercounter-2;		
+			xSendQueueBuffer[ 1 ] = ucbuffercounter-2;		
 				
 
 /* ALDP and SLDP */			
 			xSLDP_Paket.sldp_size = sizeof( xSendQueueBuffer );
 			xSLDP_Paket.sldp_payload = &xSendQueueBuffer[ 0 ];
-			xALDP_Paket = (struct ALDP_t_class *) xSLDP_Paket.sldp_payload;		
+			xALDP_Paket = ( struct ALDP_t_class * ) xSLDP_Paket.sldp_payload;		
 			
 			uint8_t ucOutBuffer[ xSLDP_Paket.sldp_size + 2 ];
 			ucOutBuffer[ 0 ] = xSLDP_Paket.sldp_size;
 
-			uint8_t i = 0;
-			for( i = 0; i != xSLDP_Paket.sldp_size; i++ )	{
+			for(uint8_t i = 0; i != xSLDP_Paket.sldp_size; i++ )	{
 				ucOutBuffer[ i + 1 ] = xSLDP_Paket.sldp_payload[ i ];
 			}
-			
-			for ( uint8_t i = 0; i == xSLDP_Paket.sldp_size; i++ ) {
+/* calculating CRC8 */			
+			xSLDP_Paket.sldp_crc8 = 0;
+			for ( uint8_t i = 0; i <= xSLDP_Paket.sldp_size; i++ ) {
 				xSLDP_Paket.sldp_crc8 = xCRC_calc(xSLDP_Paket.sldp_crc8, ucOutBuffer[ i ] );
 			}
 
-																								// CRC8 muss noch berechnet werden! TODO
-			ucOutBuffer[xSLDP_Paket.sldp_size + 1] = xSLDP_Paket.sldp_crc8;			
+			ucOutBuffer[ xSLDP_Paket.sldp_size + 1 ] = xSLDP_Paket.sldp_crc8;			
 			
 			
 /* Sendbuffer-handler */
-			if ((ucActiveBuffer == ACTIVEBUFFER_A) && ((ucProtocolBuffer_A_Counter+xSLDP_Paket.sldp_size + 2) > PROTOCOLBUFFERSIZE )) {		// Buffer A overflow?
+			if( ( ucActiveBuffer == ACTIVEBUFFER_A ) && ( ( ucProtocolBuffer_A_Counter + xSLDP_Paket.sldp_size + 2 ) > PROTOCOLBUFFERSIZE ) ) {	// Buffer A overflow?
 					ucActiveBuffer = ACTIVEBUFFER_B;
 					ucProtocolBuffer_B_Counter = 1;																								//Buffer switch from A to B
 			}
-			if ((ucActiveBuffer == ACTIVEBUFFER_B) && ((ucProtocolBuffer_B_Counter+xSLDP_Paket.sldp_size + 2) > PROTOCOLBUFFERSIZE )) {		// Buffer B overflow?
+			if( ( ucActiveBuffer == ACTIVEBUFFER_B ) && ( ( ucProtocolBuffer_B_Counter + xSLDP_Paket.sldp_size + 2 ) > PROTOCOLBUFFERSIZE ) ) {	// Buffer B overflow?
 					ucActiveBuffer = ACTIVEBUFFER_A;	
 					ucProtocolBuffer_A_Counter = 1;																								//Buffer switch from B to A
 			}
@@ -171,37 +169,36 @@ void vProtokollHandlerTask(void *pvParameters) {
 /* Copy Data into global Sendbuffer */
 /* Todo: harmonize these by outsourcing in a seperate function*/	
 			
-			if (ucActiveBuffer == ACTIVEBUFFER_A) {
+			if( ucActiveBuffer == ACTIVEBUFFER_A ) {
 				xEventGroupWaitBits(xProtocolBufferStatus, BUFFER_A_freetouse, pdTRUE, pdFALSE, portMAX_DELAY);					// wait for Buffer A
-				memcpy(ucglobalProtocolBuffer_A + ucProtocolBuffer_A_Counter, ucOutBuffer, sizeof(ucOutBuffer));				// copy the Data into Buffer A
+				memcpy( ucglobalProtocolBuffer_A + ucProtocolBuffer_A_Counter, ucOutBuffer, sizeof( ucOutBuffer ) );				// copy the Data into Buffer A
 				ucglobalProtocolBuffer_A[0] = ucProtocolBuffer_A_Counter+xSLDP_Paket.sldp_size + 2;
 				xEventGroupSetBits(xProtocolBufferStatus, BUFFER_A_freetouse);													// Buffer A release
 				ucProtocolBuffer_A_Counter += xSLDP_Paket.sldp_size + 2;
 				
 			}
 			
-			else if (ucActiveBuffer == ACTIVEBUFFER_B) {
-				xEventGroupWaitBits(xProtocolBufferStatus, BUFFER_B_freetouse, pdTRUE, pdFALSE, portMAX_DELAY);					// wait for Buffer A
-				memcpy(ucglobalProtocolBuffer_B + ucProtocolBuffer_B_Counter, ucOutBuffer, sizeof(ucOutBuffer));			// copy the Data into Buffer B
-				ucglobalProtocolBuffer_B[0] = ucProtocolBuffer_B_Counter+xSLDP_Paket.sldp_size + 2;
-				xEventGroupSetBits(xProtocolBufferStatus, BUFFER_B_freetouse);												// Buffer B release
+			else if( ucActiveBuffer == ACTIVEBUFFER_B ) {
+				xEventGroupWaitBits( xProtocolBufferStatus, BUFFER_B_freetouse, pdTRUE, pdFALSE, portMAX_DELAY );					// wait for Buffer A
+				memcpy( ucglobalProtocolBuffer_B + ucProtocolBuffer_B_Counter, ucOutBuffer, sizeof(ucOutBuffer ) );			// copy the Data into Buffer B
+				ucglobalProtocolBuffer_B[ 0 ] = ucProtocolBuffer_B_Counter+xSLDP_Paket.sldp_size + 2;
+				xEventGroupSetBits( xProtocolBufferStatus, BUFFER_B_freetouse );												// Buffer B release
 				ucProtocolBuffer_B_Counter += xSLDP_Paket.sldp_size + 2;
 			}
 			
 		}
 		else {
-			vTaskDelay(100 / portTICK_RATE_MS);				// Delay 100ms (collecting data to send)
+			vTaskDelay( 100 / portTICK_RATE_MS );				// Delay 100ms (collecting data to send)
 		}
 
 	}
 }
 
 
-// CRC8 Function (ROM=39 / RAM=4 / Average => 196_Tcy / 24.5_us for 8MHz clock) 
-uint8_t xCRC_calc(uint8_t uiCRC, uint8_t uiCRC_data) 
+// CRC8 Function (ROM=39 / RAM=4 / Average => 196_Tcy / 24.5_us for 8MHz clock)    https://www.ccsinfo.com/forum/viewtopic.php?t=37015 (Original code by T. Scott Dattalo)
+uint8_t xCRC_calc( uint8_t uiCRC, uint8_t uiCRC_data ) 
 { 
-	uint8_t i;
-	i = (uiCRC_data ^ uiCRC) & 0xff;
+	uint8_t i = (uiCRC_data ^ uiCRC) & 0xff;
 	uiCRC = 0;
 	if(i & 1)
 		uiCRC ^= 0x5e; 

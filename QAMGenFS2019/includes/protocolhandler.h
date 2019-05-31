@@ -23,9 +23,9 @@ struct SLDP_t_class
 	uint8_t sldp_crc8;
 };
 
-void vProtokollHandlerTask(void *pvParameters);
+void vProtokollHandlerTask( void *pvParameters );
 
-uint8_t xCRC_calc(uint8_t uiCRC, uint8_t uiCRC_data);
+uint8_t xCRC_calc( uint8_t uiCRC, uint8_t uiCRC_data );
 
 
 
