@@ -12,6 +12,7 @@
 #include "event_groups.h"
 #include "protocolhandler.h"
 #include "string.h"
+#include "semphr.h"
 
 /* Constants */
 #define ANZSENDQUEUE					32							// according to document "ProtokollBeschreibung.pdf" from Claudio
@@ -23,18 +24,15 @@
 #define ALDP_SRC_TEST					0x02
 #define ALDP_SRC_ERROR					0xFF
 
-// xSettings */
+/* xSettings */
 #define Settings_QAM_Order				1<<0
 #define Settings_Source_Bit1			1<<1
 #define Settings_Source_Bit2			1<<2
 #define Settings_Frequency				1<<3
-// xStatus */
+/* xStatus */
 #define Status_Error					1<<1
 #define Status_Daten_ready				1<<2
 #define Status_Daten_sending			1<<3
-/* xProtocolBufferStatus */
-#define BUFFER_A_freetouse				1<<0
-#define BUFFER_B_freetouse				1<<1
 /* Buffer */
 #define ACTIVEBUFFER_A					0
 #define ACTIVEBUFFER_B					1
@@ -42,9 +40,11 @@
 EventGroupHandle_t xSettings;							// Settings from GUI
 EventGroupHandle_t xStatus;								// something from Cedi
 
-EventGroupHandle_t xProtocolBufferStatus;				// Eventbits Bufferstatus from Protocol-Task to Modulator-Task
 
-xQueueHandle xALDPQueue;							// Data to pack and send
+xQueueHandle xALDPQueue;								// Data to pack and send
+
+SemaphoreHandle_t xGlobalProtocolBuffer_A_Key;			//A-Resource for ucGlobalProtocolBuffer_A
+SemaphoreHandle_t xGlobalProtocolBuffer_B_Key;			//A-Resource for ucGlobalProtocolBuffer_B
 
 /* global variables */
 uint8_t ucglobalProtocolBuffer_A[ PROTOCOLBUFFERSIZE ] = {};
@@ -64,7 +64,6 @@ void vProtokollHandlerTask( void *pvParameters ) {
 
 	xALDPQueue = xQueueCreate( ANZSENDQUEUE, sizeof(uint8_t) );
 
-	xProtocolBufferStatus = xEventGroupCreate();
 	
 	uint8_t	ucbuffercounter = 0;
 	
@@ -73,11 +72,12 @@ void vProtokollHandlerTask( void *pvParameters ) {
 	
 	uint8_t ucActiveBuffer = ACTIVEBUFFER_A;
 
-/*	Debbuging
-	xEventGroupSetBits( xProtocolBufferStatus, BUFFER_A_freetouse );		// Start with Buffer A
-	xEventGroupSetBits( xProtocolBufferStatus, BUFFER_B_freetouse );		// Start with Buffer A
-*/
+	xGlobalProtocolBuffer_A_Key = xSemaphoreCreateMutex();
+	xGlobalProtocolBuffer_B_Key = xSemaphoreCreateMutex();
 	
+	xSemaphoreTake( xGlobalProtocolBuffer_A_Key, portMAX_DELAY );
+
+
 	for(;;) {
 		
 		
@@ -100,7 +100,7 @@ void vProtokollHandlerTask( void *pvParameters ) {
 			
 /* save data from Queue into Buffer */
 			ucbuffercounter = 2;
-			uint8_t xSendQueueBuffer[ uxQueueMessagesWaiting( xALDPQueue ) +2 ];
+			uint8_t xSendQueueBuffer[ uxQueueMessagesWaiting( xALDPQueue ) + 2 ];
 						
 			while( ( uxQueueMessagesWaiting( xALDPQueue ) > 0 ) && (ucbuffercounter < ANZSENDQUEUE ) ) {
 				uint8_t xoutBufferPointer;
@@ -145,6 +145,7 @@ void vProtokollHandlerTask( void *pvParameters ) {
 			for(uint8_t i = 0; i != xSLDP_Paket.sldp_size; i++ )	{
 				ucOutBuffer[ i + 1 ] = xSLDP_Paket.sldp_payload[ i ];
 			}
+
 /* calculating CRC8 */			
 			xSLDP_Paket.sldp_crc8 = 0;
 			for ( uint8_t i = 0; i <= xSLDP_Paket.sldp_size; i++ ) {
@@ -155,13 +156,19 @@ void vProtokollHandlerTask( void *pvParameters ) {
 			
 			
 /* Sendbuffer-handler */
-			if( ( ucActiveBuffer == ACTIVEBUFFER_A ) && ( ( ucProtocolBuffer_A_Counter + xSLDP_Paket.sldp_size + 2 ) > PROTOCOLBUFFERSIZE ) ) {	// Buffer A overflow?
+			/* Buffer A overflow? => Buffer switch from A to B */
+			if( ( ucActiveBuffer == ACTIVEBUFFER_A ) && ( ( ucProtocolBuffer_A_Counter + xSLDP_Paket.sldp_size + 2 ) > PROTOCOLBUFFERSIZE ) ) {	
 					ucActiveBuffer = ACTIVEBUFFER_B;
-					ucProtocolBuffer_B_Counter = 1;																								//Buffer switch from A to B
+					ucProtocolBuffer_B_Counter = 1;	
+					xSemaphoreGive(xGlobalProtocolBuffer_A_Key);	
+					xSemaphoreTake( xGlobalProtocolBuffer_B_Key, portMAX_DELAY );
 			}
-			if( ( ucActiveBuffer == ACTIVEBUFFER_B ) && ( ( ucProtocolBuffer_B_Counter + xSLDP_Paket.sldp_size + 2 ) > PROTOCOLBUFFERSIZE ) ) {	// Buffer B overflow?
+			/* Buffer B overflow? => Buffer switch from B to A */
+			if( ( ucActiveBuffer == ACTIVEBUFFER_B ) && ( ( ucProtocolBuffer_B_Counter + xSLDP_Paket.sldp_size + 2 ) > PROTOCOLBUFFERSIZE ) ) {
 					ucActiveBuffer = ACTIVEBUFFER_A;	
-					ucProtocolBuffer_A_Counter = 1;																								//Buffer switch from B to A
+					ucProtocolBuffer_A_Counter = 1;
+					xSemaphoreGive(xGlobalProtocolBuffer_B_Key);
+					xSemaphoreTake( xGlobalProtocolBuffer_A_Key, portMAX_DELAY );
 			}
 
 	
@@ -170,19 +177,15 @@ void vProtokollHandlerTask( void *pvParameters ) {
 /* Todo: harmonize these by outsourcing in a seperate function*/	
 			
 			if( ucActiveBuffer == ACTIVEBUFFER_A ) {
-				xEventGroupWaitBits(xProtocolBufferStatus, BUFFER_A_freetouse, pdTRUE, pdFALSE, portMAX_DELAY);					// wait for Buffer A
 				memcpy( ucglobalProtocolBuffer_A + ucProtocolBuffer_A_Counter, ucOutBuffer, sizeof( ucOutBuffer ) );				// copy the Data into Buffer A
 				ucglobalProtocolBuffer_A[0] = ucProtocolBuffer_A_Counter+xSLDP_Paket.sldp_size + 2;
-				xEventGroupSetBits(xProtocolBufferStatus, BUFFER_A_freetouse);													// Buffer A release
 				ucProtocolBuffer_A_Counter += xSLDP_Paket.sldp_size + 2;
 				
 			}
 			
 			else if( ucActiveBuffer == ACTIVEBUFFER_B ) {
-				xEventGroupWaitBits( xProtocolBufferStatus, BUFFER_B_freetouse, pdTRUE, pdFALSE, portMAX_DELAY );					// wait for Buffer A
 				memcpy( ucglobalProtocolBuffer_B + ucProtocolBuffer_B_Counter, ucOutBuffer, sizeof(ucOutBuffer ) );			// copy the Data into Buffer B
 				ucglobalProtocolBuffer_B[ 0 ] = ucProtocolBuffer_B_Counter+xSLDP_Paket.sldp_size + 2;
-				xEventGroupSetBits( xProtocolBufferStatus, BUFFER_B_freetouse );												// Buffer B release
 				ucProtocolBuffer_B_Counter += xSLDP_Paket.sldp_size + 2;
 			}
 			
