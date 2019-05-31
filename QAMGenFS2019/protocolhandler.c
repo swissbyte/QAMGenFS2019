@@ -136,18 +136,23 @@ void vProtokollHandlerTask(void *pvParameters) {
 				
 
 /* ALDP and SLDP */			
-			xSLDP_Paket.sldp_size = sizeof(xSendQueueBuffer);
-			xSLDP_Paket.sldp_payload = &xSendQueueBuffer[0];
+			xSLDP_Paket.sldp_size = sizeof( xSendQueueBuffer );
+			xSLDP_Paket.sldp_payload = &xSendQueueBuffer[ 0 ];
 			xALDP_Paket = (struct ALDP_t_class *) xSLDP_Paket.sldp_payload;		
 			
-			uint8_t ucOutBuffer[xSLDP_Paket.sldp_size + 2];
-			ucOutBuffer[0] = xSLDP_Paket.sldp_size;
+			uint8_t ucOutBuffer[ xSLDP_Paket.sldp_size + 2 ];
+			ucOutBuffer[ 0 ] = xSLDP_Paket.sldp_size;
 
 			uint8_t i = 0;
-			for (i = 0; i != xSLDP_Paket.sldp_size; i++)	{
-				ucOutBuffer[i + 1] = xSLDP_Paket.sldp_payload[i];
+			for( i = 0; i != xSLDP_Paket.sldp_size; i++ )	{
+				ucOutBuffer[ i + 1 ] = xSLDP_Paket.sldp_payload[ i ];
 			}
-			xSLDP_Paket.sldp_crc8 = 0x66;																					// CRC8 muss noch berechnet werden! TODO
+			
+			for ( uint8_t i = 0; i == xSLDP_Paket.sldp_size; i++ ) {
+				xSLDP_Paket.sldp_crc8 = xCRC_calc(xSLDP_Paket.sldp_crc8, ucOutBuffer[ i ] );
+			}
+
+																								// CRC8 muss noch berechnet werden! TODO
 			ucOutBuffer[xSLDP_Paket.sldp_size + 1] = xSLDP_Paket.sldp_crc8;			
 			
 			
@@ -190,3 +195,30 @@ void vProtokollHandlerTask(void *pvParameters) {
 
 	}
 }
+
+
+// CRC8 Function (ROM=39 / RAM=4 / Average => 196_Tcy / 24.5_us for 8MHz clock) 
+uint8_t xCRC_calc(uint8_t uiCRC, uint8_t uiCRC_data) 
+{ 
+	uint8_t i;
+	i = (uiCRC_data ^ uiCRC) & 0xff;
+	uiCRC = 0;
+	if(i & 1)
+		uiCRC ^= 0x5e; 
+	if(i & 2)
+		uiCRC ^= 0xbc;
+	if(i & 4)
+		uiCRC ^= 0x61;
+	if(i & 8)
+		uiCRC ^= 0xc2;
+	if(i & 0x10)
+		uiCRC ^= 0x9d;
+	if(i & 0x20)
+		uiCRC ^= 0x23;
+	if(i & 0x40)
+		uiCRC ^= 0x46;
+	if(i & 0x80)
+		uiCRC ^= 0x8c;
+	return(uiCRC);
+}
+	

@@ -25,6 +25,8 @@ struct SLDP_t_class
 
 void vProtokollHandlerTask(void *pvParameters);
 
+uint8_t xCRC_calc(uint8_t uiCRC, uint8_t uiCRC_data);
+
 
 
 #endif /* PROTOKOLLHANDLER_H_ */
