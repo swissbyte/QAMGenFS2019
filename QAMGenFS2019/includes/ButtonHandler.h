@@ -2,7 +2,7 @@
  * ButtonHandler.h
  *
  * Created: 21.06.2017 12:51:09
- *  Author: mburger, C.Häuptli
+ *  Author: mburger
  */ 
 
 
@@ -15,16 +15,16 @@
 #define BUTTON_UPDATE_FREQUENCY_HZ	100
 
 typedef enum button_tag {
-	eBUTTON1,
-	eBUTTON2,
-	eBUTTON3,
-	eBUTTON4
+	BUTTON1,
+	BUTTON2,
+	BUTTON3,
+	BUTTON4
 }button_t;
 
 typedef enum button_press_tag {
-	eLONG_PRESSED,
-	ePRESSED,
-	eNOT_PRESSED
+	LONG_PRESSED,
+	PRESSED,
+	NOT_PRESSED
 } button_press_t;
 
 /*---------------------------------------------------------------------------------*/
