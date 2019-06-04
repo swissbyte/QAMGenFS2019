@@ -46,6 +46,7 @@ void vApplicationIdleHook( void )
 
 int main(void)
 {
+	resetReason_t reason = getResetReason();
 	vInitClock();
 	vInitDisplay();
 	
