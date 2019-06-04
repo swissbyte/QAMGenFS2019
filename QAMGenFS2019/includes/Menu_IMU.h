@@ -2,7 +2,7 @@
  * Menu_IMU.h
  *
  * This is the header Methode which generate the display output and organize the IMU input.
- * @Author C. Häuptli
+ * @Author C. HÃ¤uptli
  */ 
 #ifndef Menu_IMU_H_
 #define Menu_IMU_H_
@@ -42,12 +42,12 @@ QueueHandle_t xData;
 	 struct
 	 {
 		 uint8_t bQAM_Order:1;
-		 uint8_t bSource_I2C:2;
-		 uint8_t bSource_Test:3;
-		 uint8_t bSource_UART:4;
-		 uint8_t bFrequency:5;
-		 uint8_t bBit6:6;
-		 uint8_t bBit7:7;
+		 uint8_t bSource_I2C:1;
+		 uint8_t bSource_Test:1;
+		 uint8_t bSource_UART:1;
+		 uint8_t bFrequency:1;
+		 uint8_t bBit6:1;
+		 uint8_t bBit7:1;
 	 }bits;
 	 uint8_t ucSettings;
  }xQAMSettings;
@@ -55,7 +55,7 @@ QueueHandle_t xData;
 * vMenu is responsible for the display output and handles the settings of the buttons
 * @param args Unused
 * @return Nothing
-* @author C.Häuptli
+* @author C.HÃ¤uptli
 */
 
 void vMenu(void *pvParameters);
@@ -64,7 +64,7 @@ void vMenu(void *pvParameters);
 * vIMU is to manage the Accelerometer and filter the data for the game
 * @param args Unused
 * @return Nothing
-* @author C.Häuptli
+* @author C.HÃ¤uptli
 */
 
 void vIMU(void *pvParameters);
@@ -73,7 +73,7 @@ void vIMU(void *pvParameters);
 * vTestpattern is to test the QAM connection
 * @param args Unused
 * @return Nothing
-* @author C.Häuptli
+* @author C.HÃ¤uptli
 */
 
 void vTestpattern(void *pvParameters);
