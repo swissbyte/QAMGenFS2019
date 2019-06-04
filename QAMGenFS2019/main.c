@@ -49,16 +49,17 @@ int main(void)
 	vInitClock();
 	vInitDisplay();
 	
-	xTaskCreate( vProtokollHandlerTask, (const char *) "ProtokollHandlerTask", configMINIMAL_STACK_SIZE+1000, NULL, 1, NULL);
-
-	xTaskCreate( vTask_DMAHandler, (const char *) "dmaHandler", configMINIMAL_STACK_SIZE + 300, NULL, 1, &xTaskDMAHandler);
+	
 	
 	vInitDAC();
 	vInitDMATimer();
 	vInitDMA();
+	
+	xTaskCreate( vTask_DMAHandler, (const char *) "dmaHandler", configMINIMAL_STACK_SIZE, NULL, 1, &xTaskDMAHandler);
 	xTaskCreate( vMenu, (const char *) "Menu", configMINIMAL_STACK_SIZE, NULL, 1, &xMenu);
 	xTaskCreate( vIMU, (const char *) "IMU", configMINIMAL_STACK_SIZE, NULL, 1, &xIMU);
 	xTaskCreate( vTestpattern, (const char *) "IMU", configMINIMAL_STACK_SIZE, NULL, 1, &xTestpattern);
+	xTaskCreate( vProtokollHandlerTask, (const char *) "ProtokollHandlerTask", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 	
 	xData = xQueueCreate( 10, sizeof(uint8_t) );	
 	
