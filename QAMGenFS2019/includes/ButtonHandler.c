@@ -7,18 +7,15 @@
  #include <avr/io.h>
  #include "ButtonHandler.h"
 
- #define BUTTON1_VALUE (PORTF.IN & PIN4_bm) 
- #define BUTTON2_VALUE (PORTF.IN & PIN5_bm) 
- #define BUTTON3_VALUE (PORTF.IN & PIN6_bm) 
- #define BUTTON4_VALUE (PORTF.IN & PIN7_bm) 
+ #define Button1_Value (PORTF.IN & PIN4_bm) >> PIN4_bp
+ #define Button2_Value (PORTF.IN & PIN5_bm) >> PIN5_bp
+ #define Button3_Value (PORTF.IN & PIN6_bm) >> PIN6_bp
+ #define Button4_Value (PORTF.IN & PIN7_bm) >> PIN7_bp
 
  #define BUTTON_PRESS_SHORT			10
  #define BUTTON_PRESS_LONG			500
 
- /** 
- This is the initialization of the Button main
- @author C.Häuptli
- */
+ 
 
  void initButtons(void) {
 	PORTF.DIRCLR = PIN4_bm; //SW1
@@ -32,25 +29,21 @@
  button_press_t b3Status;
  button_press_t b4Status;
 
-/** 
- This is the main updateButton function
- @author C.Häuptli
- */
  void updateButtons(void) {
-	static uint16_t usButton1Counter = 0;
-	static uint16_t usButton2Counter = 0;
-	static uint16_t usButton3Counter = 0;
-	static uint16_t usButton4Counter = 0;
-	if(BUTTON1_VALUE == 0) 
+	static uint16_t b1Count = 0;
+	static uint16_t b2Count = 0;
+	static uint16_t b3Count = 0;
+	static uint16_t b4Count = 0;
+	if(Button1_Value == 0) 
 	{
-		if(usButton1Counter < 60000) 
+		if(b1Count < 60000) 
 		{
-			usButton1Counter++;
+			b1Count++;
 		}
 	} 
 	else 
 	{
-		if(usButton1Counter > (BUTTON_PRESS_SHORT / (1000/BUTTON_UPDATE_FREQUENCY_HZ))) 
+		if(b1Count > (BUTTON_PRESS_SHORT / (1000/BUTTON_UPDATE_FREQUENCY_HZ))) 
 		{
 			//Button was pressed Short	
 			b1Status = ePRESSED;
@@ -59,16 +52,16 @@
 		{
 			b1Status = eNOT_PRESSED;
 		}
-		usButton1Counter = 0;
+		b1Count = 0;
 	}
-	if(BUTTON2_VALUE == 0) {
-		if(usButton2Counter < 60000) {
-			usButton2Counter++;
+	if(Button2_Value == 0) {
+		if(b2Count < 60000) {
+			b2Count++;
 		}
 	} 
 	else 
 	{
-		if(usButton2Counter > (BUTTON_PRESS_SHORT / (1000/BUTTON_UPDATE_FREQUENCY_HZ))) 
+		if(b2Count > (BUTTON_PRESS_SHORT / (1000/BUTTON_UPDATE_FREQUENCY_HZ))) 
 		{
 				//Button was pressed Short
 				b2Status = ePRESSED;
@@ -78,18 +71,18 @@
 		{
 			b2Status = eNOT_PRESSED;			
 		}
-		usButton2Counter = 0;
+		b2Count = 0;
 	}
-	if(BUTTON3_VALUE == 0) 
+	if(Button3_Value == 0) 
 	{
-		if(usButton3Counter < 60000)
+		if(b3Count < 60000)
 		 {
-			usButton3Counter++;
+			b3Count++;
 		}
 	}
 	else 
 	{
-		if(usButton3Counter > (BUTTON_PRESS_SHORT / (1000/BUTTON_UPDATE_FREQUENCY_HZ))) 
+		if(b3Count > (BUTTON_PRESS_SHORT / (1000/BUTTON_UPDATE_FREQUENCY_HZ))) 
 		{
 			//Button was pressed Short
 			b3Status = ePRESSED;
@@ -99,18 +92,18 @@
 		{
 			b3Status = eNOT_PRESSED;
 		}
-		usButton3Counter = 0;
+		b3Count = 0;
 	}
-	if(BUTTON4_VALUE == 0)
+	if(Button4_Value == 0)
 	 {
-		if(usButton4Counter < 60000)
+		if(b4Count < 60000)
 		 {
-			usButton4Counter++;
+			b4Count++;
 		}
 	} 
 	else 
 	{
-		if(usButton4Counter > (BUTTON_PRESS_SHORT / (1000/BUTTON_UPDATE_FREQUENCY_HZ))) 
+		if(b4Count > (BUTTON_PRESS_SHORT / (1000/BUTTON_UPDATE_FREQUENCY_HZ))) 
 		{
 				//Button was pressed Short
 				b4Status = ePRESSED;
@@ -120,14 +113,9 @@
 		{
 			b4Status = eNOT_PRESSED;
 		}
-		usButton4Counter = 0;
+		b4Count = 0;
 	}
  }
-
-/** 
- This is the main updateButton function
- @author C.Häuptli
- */
 
  button_press_t getButtonPress(button_t button) {
 	switch(button) {
@@ -143,7 +131,6 @@
 		case eBUTTON4:
 			return b4Status;
 		break;
-		
 	}
 	return eNOT_PRESSED;
  }
