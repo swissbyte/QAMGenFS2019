@@ -1,5 +1,5 @@
 /*
- * QAMGenFS2019.c
+ * FreeRTOS10_Template2.c
  *
  * Created: 20.03.2018 18:32:07
  * Author : chaos, Michael Meier, Cedric H�uptli
@@ -22,18 +22,20 @@
 
 #include "mem_check.h"
 
+#include "outputManagement.h"
 #include "init.h"
 #include "utils.h"
 #include "errorHandler.h"
 #include "NHD0420Driver.h"
 
+#include "qamSendByte.h"
 #include "Menu_IMU.h"
-
 
 
 
 extern void vApplicationIdleHook( void );
 
+TaskHandle_t xTaskDMAHandler;
 
 void vApplicationIdleHook( void )
 {	
@@ -42,14 +44,15 @@ void vApplicationIdleHook( void )
 
 int main(void)
 {
-    resetReason_t reason = getResetReason();
-
 	vInitClock();
 	vInitDisplay();
 	
 
-
-		
+	xTaskCreate( vTask_DMAHandler, (const char *) "dmaHandler", configMINIMAL_STACK_SIZE + 300, NULL, 1, &xTaskDMAHandler);
+	
+	vInitDAC();
+	vInitDMATimer();
+	vInitDMA();
 	xTaskCreate( vMenu, (const char *) "Menu", configMINIMAL_STACK_SIZE, NULL, 1, &xMenu);
 	xTaskCreate( vIMU, (const char *) "IMU", configMINIMAL_STACK_SIZE, NULL, 1, &xIMU);
 	xTaskCreate( vTestpattern, (const char *) "IMU", configMINIMAL_STACK_SIZE, NULL, 1, &xTestpattern);

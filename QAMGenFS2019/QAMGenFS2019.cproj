@@ -300,6 +300,10 @@
     <Compile Include="includes\NHD0420Driver.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="includes\outputManagement.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="includes\qamSendByte.h">
     <Compile Include="includes\twiMaster.h">
       <SubType>compile</SubType>
     </Compile>
@@ -321,6 +325,10 @@
     <Compile Include="NHD0420Driver.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="outputManagement.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="qamSendByte.c">
     <Compile Include="twiMaster.c">
       <SubType>compile</SubType>
     </Compile>
