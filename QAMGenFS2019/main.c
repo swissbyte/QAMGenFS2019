@@ -19,6 +19,7 @@
 #include "semphr.h"
 #include "event_groups.h"
 #include "stack_macros.h"
+#include "queue.h"
 
 #include "mem_check.h"
 
@@ -27,6 +28,7 @@
 #include "utils.h"
 #include "errorHandler.h"
 #include "NHD0420Driver.h"
+#include "protocolhandler.h"
 
 #include "qamSendByte.h"
 #include "Menu_IMU.h"
@@ -47,6 +49,7 @@ int main(void)
 	vInitClock();
 	vInitDisplay();
 	
+	xTaskCreate( vProtokollHandlerTask, (const char *) "ProtokollHandlerTask", configMINIMAL_STACK_SIZE+1000, NULL, 1, NULL);
 
 	xTaskCreate( vTask_DMAHandler, (const char *) "dmaHandler", configMINIMAL_STACK_SIZE + 300, NULL, 1, &xTaskDMAHandler);
 	

@@ -300,6 +300,7 @@
     <Compile Include="includes\NHD0420Driver.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="includes\protocolhandler.h">
     <Compile Include="includes\outputManagement.h">
       <SubType>compile</SubType>
     </Compile>
@@ -325,6 +326,7 @@
     <Compile Include="NHD0420Driver.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="protocolhandler.c">
     <Compile Include="outputManagement.c">
       <SubType>compile</SubType>
     </Compile>
