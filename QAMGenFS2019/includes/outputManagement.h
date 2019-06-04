@@ -27,11 +27,6 @@ volatile uint8_t ucQamBlockTransfer;
 volatile uint8_t ucQamSymbolCount;
 
 
-
-
-volatile uint8_t ucBuffer_a[2048];
-volatile uint8_t ucBuffer_b[2048];
-
 uint8_t ucNextLUTOffset;
 
 
