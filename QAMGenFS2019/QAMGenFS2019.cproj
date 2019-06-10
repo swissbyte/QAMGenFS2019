@@ -156,7 +156,7 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="dma.c">
+    <Compile Include="ButtonHandler.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="driver\clksys_driver.c">
@@ -270,7 +270,7 @@
     <Compile Include="includes\avr_compiler.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="includes\dma.h">
+    <Compile Include="includes\ButtonHandler.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="includes\errorHandler.h">
@@ -282,13 +282,28 @@
     <Compile Include="includes\init.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="includes\LSM9DS1Defines.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="includes\mem_check.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="includes\Menu_IMU.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="includes\NHD0420Driver.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="includes\tasks.h">
+    <Compile Include="includes\outputManagement.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="includes\protocolhandler.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="includes\qamSendByte.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="includes\twiMaster.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="includes\utils.h">
@@ -303,10 +318,22 @@
     <Compile Include="mem_check.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="Menu_IMU.c">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="NHD0420Driver.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="tasks.c">
+    <Compile Include="outputManagement.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="protocolhandler.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="qamSendByte.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="twiMaster.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="utils.c">
