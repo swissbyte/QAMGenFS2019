@@ -12,8 +12,6 @@
 uint32_t ulStatus = 0;				//P-Resource Status
  
 
-
-
 /**
 * vMenu is responsible for the display output and handles the settings of the buttons
 * @param args Unused
@@ -76,7 +74,7 @@ void vMenu(void *pvParameters) {
 				
 				if (ucSettings == 1)
 				{
-					if (ucSource < 2 )
+					if (ucSource < 3 )
 					{
 						ucSource++;
 					}
@@ -89,24 +87,35 @@ void vMenu(void *pvParameters) {
 						xQAMSettings.bits.bSource_I2C = 0;
 						xQAMSettings.bits.bSource_Test = 0;
 						xQAMSettings.bits.bSource_UART = 0;
+						xQAMSettings.bits.bOutput_IO = 0;
 						switch (ucSource)
 						{
 							case 0:
 								xQAMSettings.bits.bSource_I2C = 1;
 								vTaskResume(xIMU);
 								vTaskSuspend(xTestpattern);
+								vTaskSuspend(xIO);
 								//vTaskSuspend(xUART)
 								break;
 							case 1:
 								xQAMSettings.bits.bSource_Test = 1;
 								vTaskResume(xTestpattern);
 								vTaskSuspend(xIMU);
+								vTaskSuspend(xIO);
 								//vTaskSuspend(xUART);
 								break;
 							case 2:
 								xQAMSettings.bits.bSource_UART = 1;
 								//vTaskResume(xUART);
 								vTaskSuspend(xIMU);
+								vTaskSuspend(xTestpattern);
+								vTaskSuspend(xIO);
+								break;
+							case 3:
+								xQAMSettings.bits.bOutput_IO = 1;
+								//vTaskResume(xUART);
+								vTaskResume(xIMU);
+								vTaskResume(xIO);
 								vTaskSuspend(xTestpattern);
 								break;
 							default:break;
@@ -211,6 +220,10 @@ void vMenu(void *pvParameters) {
 					{
 						vDisplayWriteStringAtPos(2,14,"UART");
 					}
+					else if (xQAMSettings.bits.bOutput_IO)
+					{
+						vDisplayWriteStringAtPos(2,14,"Briged");
+					}
 					
 					if (xQAMSettings.bits.bFrequency)
 					{
@@ -229,7 +242,7 @@ void vMenu(void *pvParameters) {
 			if (ucMode == 2)
 			{
 				vDisplayWriteStringAtPos(0,0,"QAM Data");
-				if(xQueueReceive(xData,&ucData_to_send,(TickType_t)100))
+				if(xQueuePeek(xData,&ucData_to_send,5/portTICK_RATE_MS))
 				{
 					vDisplayWriteStringAtPos(1,0,"Data: %d", ucData_to_send);
 				}
@@ -349,11 +362,111 @@ void vIMU(void *pvParameters) {
 			ucData_Accel_y_negativ = 0;
 		}
 		ucData_to_send = (ucData_Accel_y_negativ<<6)|(ucData_Accel_y_positiv<<4)|(ucData_Accel_x_negativ<<2) | ucData_Accel_x_positiv;
-		if (uxQueueMessagesWaiting(xData)< 2)
+		if (xQAMSettings.bits.bOutput_IO)
 		{
-			xQueueSendToBack(xData,&ucData_to_send,portMAX_DELAY);
+			if (uxQueueMessagesWaiting(xDatabriged)< 2)
+			{
+				xQueueSendToBack(xDatabriged,&ucData_to_send,10/portTICK_RATE_MS);
+			}
+		}
+		else
+		{
+			if (uxQueueMessagesWaiting(xData)< 2)
+			{
+				xQueueSendToBack(xData,&ucData_to_send,portMAX_DELAY);
+			}
 		}
 		vTaskDelay(2 / portTICK_RATE_MS);
+	}
+}
+
+
+/**
+* vOutput is to manage the I/O Output
+* @param args Unused
+* @return Nothing
+* @author C.H�uptli
+*/
+
+void vOutput(void *pvParameters) {
+	(void) pvParameters;
+	
+	PORTE.DIRSET = 0xFF;
+	PORTE.OUTSET = 0xFF;
+
+	uint8_t ucDatabriged = 0;
+	
+	for(;;) {
+		
+		if(xQueueReceive(xDatabriged,&ucDatabriged,(TickType_t)100))
+		{
+			if (ucDatabriged & 0x01)
+			{
+				PORTE.OUTCLR = PIN0_bm;
+			}
+			else
+			{
+				PORTE.OUTSET = PIN0_bm;
+			}
+			if (ucDatabriged & 0x02)
+			{
+				PORTE.OUTCLR = PIN1_bm;
+			}
+			else
+			{
+				PORTE.OUTSET = PIN1_bm;
+			}
+			if (ucDatabriged & 0x04)
+			{
+				PORTE.OUTCLR = PIN2_bm;
+			}
+			else
+			{
+				PORTE.OUTSET = PIN2_bm;
+			}
+			if (ucDatabriged & 0x08)
+			{
+				PORTE.OUTCLR = PIN3_bm;
+			}
+			else
+			{
+				PORTE.OUTSET = PIN3_bm;
+			}
+			if (ucDatabriged & 0x10)
+			{
+				PORTE.OUTCLR = PIN4_bm;
+			}
+			else
+			{
+				PORTE.OUTSET = PIN4_bm;
+			}
+			if (ucDatabriged & 0x20)
+			{
+				PORTE.OUTCLR = PIN5_bm;
+			}
+			else
+			{
+				PORTE.OUTSET = PIN5_bm;
+			}
+			if (ucDatabriged & 0x40)
+			{
+				PORTE.OUTCLR = PIN6_bm;
+			}
+			else
+			{
+				PORTE.OUTSET = PIN6_bm;
+			}
+			if (ucDatabriged & 0x80)
+			{
+				PORTE.OUTCLR = PIN7_bm;
+			}
+			else
+			{
+				PORTE.OUTSET = PIN7_bm;
+			}
+			
+		}
+		vTaskDelay(10 / portTICK_RATE_MS);
 	}
 }
 

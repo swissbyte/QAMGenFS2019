@@ -60,8 +60,10 @@ int main(void)
 	xTaskCreate( vIMU, (const char *) "IMU", configMINIMAL_STACK_SIZE, NULL, 1, &xIMU);
 	xTaskCreate( vTestpattern, (const char *) "IMU", configMINIMAL_STACK_SIZE, NULL, 1, &xTestpattern);
 	xTaskCreate( vProtokollHandlerTask, (const char *) "ProtokollHandlerTask", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+	xTaskCreate( vOutput, (const char *) "IMU", configMINIMAL_STACK_SIZE, NULL, 1, &xIO);
 	
 	xData = xQueueCreate( 10, sizeof(uint8_t) );	
+	xDatabriged = xQueueCreate( 10, sizeof(uint8_t) );	
 	
 	xSettingKey = xSemaphoreCreateMutex(); //Create Lock
 	xStatusKey = xSemaphoreCreateMutex(); //Create Lock

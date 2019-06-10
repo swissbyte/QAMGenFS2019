@@ -28,14 +28,13 @@
 TaskHandle_t xMenu;
 TaskHandle_t xIMU;
 TaskHandle_t xTestpattern;
-
-
+TaskHandle_t xIO;
 
 SemaphoreHandle_t xSettingKey;		//Lock for Settings
-
 SemaphoreHandle_t xStatusKey;		//Lock for Status
 
 QueueHandle_t xData;
+QueueHandle_t xDatabriged;
 
  union QAM_SETTING
  {
@@ -45,12 +44,13 @@ QueueHandle_t xData;
 		 uint8_t bSource_I2C:1;
 		 uint8_t bSource_Test:1;
 		 uint8_t bSource_UART:1;
+		 uint8_t bOutput_IO:1;
 		 uint8_t bFrequency:1;
-		 uint8_t bBit6:1;
 		 uint8_t bBit7:1;
 	 }bits;
 	 uint8_t ucSettings;
  }xQAMSettings;
+ 
 /** 
 * vMenu is responsible for the display output and handles the settings of the buttons
 * @param args Unused
@@ -70,6 +70,15 @@ void vMenu(void *pvParameters);
 void vIMU(void *pvParameters);
 
 /**
+* vOutput is to manage the I/O Output
+* @param args Unused
+* @return Nothing
+* @author C.Häuptli
+*/
+
+void vOutput(void *pvParameters);
+
+/**
 * vTestpattern is to test the QAM connection
 * @param args Unused
 * @return Nothing
@@ -77,5 +86,7 @@ void vIMU(void *pvParameters);
 */
 
 void vTestpattern(void *pvParameters);
+
+
 
 #endif /* Menu_IMU_H_ */
