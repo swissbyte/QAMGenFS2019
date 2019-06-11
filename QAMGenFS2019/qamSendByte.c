@@ -12,6 +12,10 @@
 #include "qamSendByte.h"
 #include "outputManagement.h"
 
+#include "protocolhandler.h"
+uint8_t volatile ucNoData= 0;
+
+
 EventGroupHandle_t xDMAProcessEventGroup;
 
 void ucqamSendByte(uint8_t ucByte)
@@ -24,40 +28,93 @@ void ucqamSendByte(uint8_t ucByte)
 	
 	for (ucSymbol=0; ucSymbol!=4; ucSymbol ++)
 	{
-		if(ucActivebuffer)
+
+		if(!ucActivebuffer)
 		{
+		ucDataReadyB = 0;
 		ucQamSymbolsbufferB[ucSymbol] = ucQamLUT[(ucByte >> (2 * ucSymbol))  & 0x03];
+		
 		}
 		else
 		{
+		ucDataReadyA = 0;
 		ucQamSymbolsbufferA[ucSymbol] = ucQamLUT[(ucByte >> (2 * ucSymbol))  & 0x03];
 		}
 	}
 	ucQamSymbolCount = 3;	
+
+	if(ucActivebuffer)
+	{
+	ucDataReadyA = 1;
+	}	
+	else
+	{
+	ucDataReadyB = 1;
+	}
+
 }
 
 void vTask_DMAHandler(void *pvParameters) 
 {
-	
-	xDMAProcessEventGroup = xEventGroupCreate();
-	EventBits_t uxBits;
-	
-	ucqamSendByte(0xE4);
 	vSetDMA_LUT_Offset();
+	
+	xSemaphoreTake(xByteSent, portMAX_DELAY); //Semaphore ist bereits weg....
 	while(1)
-	{
-		//uxBits = xEventGroupWaitBits(xDMAProcessEventGroup,	DMA_EVT_GRP_QAM_FINISHED, pdTRUE, pdFALSE, portMAX_DELAY);
-					
-		if(DMA_EVT_GRP_QAM_FINISHED && ucQamBlockTransfer==0)
-		{
-		
-			PORTF.OUT = (PORTF.OUT & (0xFF - 0x02));
-			PORTF.OUT |= 0x04;
-			
-			ucqamSendByte(0xcc);
-			vStartQAMTransfer();			
-		}
-
+	{			
+			xSemaphoreTake(xGlobalProtocolBuffer_A_Key,portMAX_DELAY);
+			//Erster Buffer vorbereiten. 
+			if(ucNoData)
+			{
+				ucqamSendByte(ucglobalProtocolBuffer_A[1]);
+				ucNoData = 0;
+				//i = 0 = Size Byte
+				//i = 1 = oben verarbeitet
+				//i = 2!!!
+				for(uint8_t i = 2; i > ucglobalProtocolBuffer_A[0]; i++)
+				{
+					ucqamSendByte(ucglobalProtocolBuffer_A[i]);
+					xSemaphoreTake(xByteSent, portMAX_DELAY);
+				}
+			}
+			else
+			{
+				//i = 0 = Size Byte
+				//i = 1 = oben verarbeitet
+				//i = 2!!!
+				for(uint8_t i = 1; i >ucglobalProtocolBuffer_A[0]; i++)
+				{
+					ucqamSendByte(ucglobalProtocolBuffer_A[i]);
+					xSemaphoreTake(xByteSent, portMAX_DELAY);
+				}	
+			}
+			xSemaphoreGive(xGlobalProtocolBuffer_A_Key);
+			xSemaphoreTake(xGlobalProtocolBuffer_B_Key,portMAX_DELAY);
+			//Erster Buffer vorbereiten.
+			if(ucNoData)
+			{
+				ucqamSendByte(ucglobalProtocolBuffer_B[1]);
+				ucNoData = 0;
+				//i = 0 = Size Byte
+				//i = 1 = oben verarbeitet
+				//i = 2!!!
+				for(uint8_t i = 2; i > ucglobalProtocolBuffer_B[0]; i++)
+				{
+					ucqamSendByte(ucglobalProtocolBuffer_B[i]);
+					xSemaphoreTake(xByteSent, portMAX_DELAY);
+				}
+			}
+			else
+			{
+				//i = 0 = Size Byte
+				//i = 1 = oben verarbeitet
+				//i = 2!!!
+				for(uint8_t i = 1; i >ucglobalProtocolBuffer_B[0]; i++)
+				{
+					ucqamSendByte(ucglobalProtocolBuffer_B[i]);
+					xSemaphoreTake(xByteSent, portMAX_DELAY);
+				}
+			}
+			xSemaphoreGive(xGlobalProtocolBuffer_B_Key);
 	}
 	
 }

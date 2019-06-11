@@ -6,6 +6,7 @@
  */ 
 
 
+#include "semphr.h"
 #ifndef DMA_H_
 #define DMA_H_
 
@@ -22,6 +23,10 @@ void vStartQAMTransfer();
 uint8_t ucQamSymbolsbufferA[8];
 uint8_t ucQamSymbolsbufferB[8];
 uint8_t ucActivebuffer;
+
+uint8_t ucDataReadyA;
+uint8_t ucDataReadyB;
+
 volatile uint8_t ucQamBlockTransfer;
 
 volatile uint8_t ucQamSymbolCount;
@@ -29,5 +34,6 @@ volatile uint8_t ucQamSymbolCount;
 
 uint8_t ucNextLUTOffset;
 
+SemaphoreHandle_t xByteSent;
 
 #endif /* DMA_H_ */

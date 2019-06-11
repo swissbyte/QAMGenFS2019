@@ -12,11 +12,13 @@
 #include "event_groups.h"
 #include "protocolhandler.h"
 #include "string.h"
+
 #include "semphr.h"
 
 /* Constants */
 #define ANZSENDQUEUE					32							// according to document "ProtokollBeschreibung.pdf" from Claudio
 #define	PROTOCOLBUFFERSIZE				32
+
 /* xQuelle */
 #define PAKET_TYPE_ALDP					0x01
 #define ALDP_SRC_UART					0x00
@@ -40,15 +42,16 @@
 EventGroupHandle_t xSettings;							// Settings from GUI
 EventGroupHandle_t xStatus;								// something from Cedi
 
+uint8_t ucglobalProtocolBuffer_A[ PROTOCOLBUFFERSIZE ] = {};
+uint8_t ucglobalProtocolBuffer_B[ PROTOCOLBUFFERSIZE ] = {};
 
 xQueueHandle xALDPQueue;								// Data to pack and send
+
+
 
 SemaphoreHandle_t xGlobalProtocolBuffer_A_Key;			//A-Resource for ucGlobalProtocolBuffer_A
 SemaphoreHandle_t xGlobalProtocolBuffer_B_Key;			//A-Resource for ucGlobalProtocolBuffer_B
 
-/* global variables */
-uint8_t ucglobalProtocolBuffer_A[ PROTOCOLBUFFERSIZE ] = {};
-uint8_t ucglobalProtocolBuffer_B[ PROTOCOLBUFFERSIZE ] = {};
 
 
 void vProtokollHandlerTask( void *pvParameters ) {

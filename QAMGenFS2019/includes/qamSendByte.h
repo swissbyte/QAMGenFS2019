@@ -14,6 +14,7 @@
 #include "queue.h"
 #include "event_groups.h"
 
+extern volatile uint8_t ucNoData;
 
 void vTask_DMAHandler(void *pvParameters);
 
