@@ -56,6 +56,7 @@ int main(void)
 	vInitDMATimer();
 	vInitDMA();
 	
+
 	xTaskCreate( vTask_DMAHandler, (const char *) "dmaHandler", configMINIMAL_STACK_SIZE, NULL, 2, &xTaskDMAHandler);
 	xTaskCreate( vMenu, (const char *) "Menu", configMINIMAL_STACK_SIZE, NULL, 1, &xMenu);
 	xTaskCreate( vIMU, (const char *) "IMU", configMINIMAL_STACK_SIZE, NULL, 1, &xIMU);

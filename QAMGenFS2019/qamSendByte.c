@@ -11,8 +11,10 @@
 #include "event_groups.h"
 #include "qamSendByte.h"
 #include "outputManagement.h"
+
 #include "protocolhandler.h"
-uint8_t ucNoData= 0;
+uint8_t volatile ucNoData= 0;
+
 
 EventGroupHandle_t xDMAProcessEventGroup;
 
@@ -26,6 +28,7 @@ void ucqamSendByte(uint8_t ucByte)
 	
 	for (ucSymbol=0; ucSymbol!=4; ucSymbol ++)
 	{
+
 		if(!ucActivebuffer)
 		{
 		ucDataReadyB = 0;
@@ -39,6 +42,7 @@ void ucqamSendByte(uint8_t ucByte)
 		}
 	}
 	ucQamSymbolCount = 3;	
+
 	if(ucActivebuffer)
 	{
 	ucDataReadyA = 1;
@@ -47,6 +51,7 @@ void ucqamSendByte(uint8_t ucByte)
 	{
 	ucDataReadyB = 1;
 	}
+
 }
 
 void vTask_DMAHandler(void *pvParameters) 

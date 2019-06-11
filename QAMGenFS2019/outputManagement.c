@@ -28,6 +28,7 @@ uint8_t ucNextLUTOffset = 0;
 volatile uint8_t ucLutCount = 0;
 volatile uint8_t ucQamSymbolCount = 0;
 volatile uint8_t ucQamBlockTransfer = 0;
+
 volatile uint8_t ucDataReady = 0;
 uint8_t ucActivebuffer=0;
 uint8_t ucDataReadyA=0;
@@ -35,6 +36,7 @@ uint8_t ucDataReadyB=0;
 
 uint8_t ucQamSymbolsbufferA[8] = {0,0,0,0,0,0,0,0};
 uint8_t ucQamSymbolsbufferB[8] = {0,0,0,0,0,0,0,0};
+
 
 	
 void vSetDMA_LUT_Offset();
@@ -125,6 +127,7 @@ void vSetDMA_LUT_Offset()
 	*
 	*Die Transaktion wurde gestartet und wir warten
 	*/
+
 	
 	if(ucActivebuffer)
 	{
@@ -156,7 +159,6 @@ void vSetDMA_LUT_Offset()
 			vConfigureDMASource();
 		}
 	}
-	
 }
 
 void vDMAIntHandler()
@@ -190,7 +192,7 @@ void vInitDMATimer()
 {
 	/*
 	*
-	* Timer für DMA initialisieren
+	* Timer fÃ¼r DMA initialisieren
 	*/	
 
 	TCC1.CTRLA = 0; 
