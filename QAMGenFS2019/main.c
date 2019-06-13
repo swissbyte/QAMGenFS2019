@@ -19,6 +19,7 @@
 #include "semphr.h"
 #include "event_groups.h"
 #include "stack_macros.h"
+#include "queue.h"
 
 #include "mem_check.h"
 
@@ -27,6 +28,7 @@
 #include "utils.h"
 #include "errorHandler.h"
 #include "NHD0420Driver.h"
+#include "protocolhandler.h"
 
 #include "qamSendByte.h"
 #include "Menu_IMU.h"
@@ -44,23 +46,32 @@ void vApplicationIdleHook( void )
 
 int main(void)
 {
+	resetReason_t reason = getResetReason();
 	vInitClock();
 	vInitDisplay();
 	
-
-	xTaskCreate( vTask_DMAHandler, (const char *) "dmaHandler", configMINIMAL_STACK_SIZE + 300, NULL, 1, &xTaskDMAHandler);
+	
 	
 	vInitDAC();
 	vInitDMATimer();
 	vInitDMA();
+	
+	
+	xGlobalProtocolBuffer_A_Key = xSemaphoreCreateMutex();
+	xGlobalProtocolBuffer_B_Key = xSemaphoreCreateMutex();
+
 	xTaskCreate( vMenu, (const char *) "Menu", configMINIMAL_STACK_SIZE, NULL, 1, &xMenu);
 	xTaskCreate( vIMU, (const char *) "IMU", configMINIMAL_STACK_SIZE, NULL, 1, &xIMU);
 	xTaskCreate( vTestpattern, (const char *) "IMU", configMINIMAL_STACK_SIZE, NULL, 1, &xTestpattern);
+	xTaskCreate( vProtokollHandlerTask, (const char *) "ProtokollHandlerTask", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+	xTaskCreate( vOutput, (const char *) "IMU", configMINIMAL_STACK_SIZE, NULL, 1, &xIO);
+	xTaskCreate( vTask_DMAHandler, (const char *) "dmaHandler", configMINIMAL_STACK_SIZE, NULL, 2, &xTaskDMAHandler);
 	
 	xData = xQueueCreate( 10, sizeof(uint8_t) );	
-	
+	xDatabriged = xQueueCreate( 10, sizeof(uint8_t) );	
 	xSettingKey = xSemaphoreCreateMutex(); //Create Lock
 	xStatusKey = xSemaphoreCreateMutex(); //Create Lock
+	
 	
 	vDisplayClear();
 	vDisplayWriteStringAtPos(0,0,"FreeRTOS 10.0.1");

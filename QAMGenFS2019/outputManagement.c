@@ -17,6 +17,7 @@
 
 #include "FreeRTOS.h"
 #include "task.h"
+#include "semphr.h"
 
 #define SYMBOL_BUFFER_SIZE	32
 #define DAC_IDLE_VOLTAGE 0
@@ -25,15 +26,21 @@
 volatile uint8_t ucLutOffset = 0; 
 uint8_t ucNextLUTOffset = 0;
 volatile uint8_t ucLutCount = 0;
-volatile uint8_t ucQamSymbolCount = 0;
+volatile uint8_t ucQamSymbolCount = 3;
 volatile uint8_t ucQamBlockTransfer = 0;
-uint8_t ucActivebuffer= 0;
+
+volatile uint8_t ucDataReady = 0;
+uint8_t ucActivebuffer=0;
+uint8_t ucDataReadyA=0;
+uint8_t ucDataReadyB=0;
 
 uint8_t ucQamSymbolsbufferA[8] = {0,0,0,0,0,0,0,0};
 uint8_t ucQamSymbolsbufferB[8] = {0,0,0,0,0,0,0,0};
-	
-void vSetDMA_LUT_Offset();
 
+
+	
+
+void vConfigureDMASource(void);
 
 
 const uint16_t usSineLUT[SYMBOL_BUFFER_SIZE * 2] =
@@ -69,11 +76,45 @@ void vInitDAC()
 }
 
 
-void vStartQAMTransfer(void)
+void vDoDMAStuff(void)
 {
-	vSetDMA_LUT_Offset();
+		if(ucQamBlockTransfer == 1)
+		{
+			ucQamBlockTransfer = 0;
+			if(ucActivebuffer)
+			{
+				ucActivebuffer=0;	
+			}
+			else
+			{
+				ucActivebuffer=1;	
+			}
+			ucQamSymbolCount = 3;	
+			xSemaphoreGiveFromISR(xByteSent,NULL);
+		}
+
+		if(ucQamSymbolCount != 0)
+		{
+			ucQamBlockTransfer = 2;
+			ucQamSymbolCount --;
+		}
+		else
+		{
+			if(ucQamBlockTransfer == 2) ucQamBlockTransfer = 1;
+		}
+		
+		if(ucQamBlockTransfer)
+		{
+			vConfigureDMASource();
+		}
 }
 
+void vConfigureDMASource(void)
+{
+	DMA.CH0.SRCADDR0	= ( (uint16_t) (&usSineLUT[0 + ucLutOffset]) >> 0) & 0xFF;
+	DMA.CH0.SRCADDR1	= ( (uint16_t) (&usSineLUT[0 + ucLutOffset]) >> 8) & 0xFF;
+	DMA.CH0.CTRLA		|= DMA_CH_ENABLE_bm;
+}
 
 void vSetDMA_LUT_Offset()
 {
@@ -82,53 +123,46 @@ void vSetDMA_LUT_Offset()
 	*Die Transaktion wurde gestartet und wir warten
 	*/
 
-
+	
 	if(ucActivebuffer)
 	{
-		ucLutOffset = ucQamSymbolsbufferB[ucQamSymbolCount];
-	}
-	else
-	{
-		ucLutOffset = ucQamSymbolsbufferA[ucQamSymbolCount];
-	}
-
-	if(ucQamBlockTransfer == 1)
-	{
-		ucQamBlockTransfer = 0;
-		if(ucActivebuffer)
+		if(ucDataReadyB)
 		{
-			ucActivebuffer=0;
+			ucLutOffset = ucQamSymbolsbufferB[ucQamSymbolCount];
+			vDoDMAStuff();
 		}
 		else
 		{
-			ucActivebuffer=1;
+			//Keine Daten....
+			ucNoData = 1;
+			ucLutOffset =0;
+			//DACB.CH0DATA = 0x00;
+			vConfigureDMASource();
 		}
 	}
-
-	if(ucQamSymbolCount != 0)
+	else
 	{
-		ucQamBlockTransfer = 2;
-		ucQamSymbolCount --;		
+		if(ucDataReadyA)
+		{
+			ucLutOffset = ucQamSymbolsbufferA[ucQamSymbolCount];
+			vDoDMAStuff();
+		}
+		else
+		{
+			//Keine Daten....
+			ucNoData = 1;
+			ucLutOffset =0;
+			vConfigureDMASource();
+		}
 	}
-	else 
-	{
-		if(ucQamBlockTransfer == 2) ucQamBlockTransfer = 1;
-	}	
-	
-	if(ucQamBlockTransfer)
-	{	
-		DMA.CH0.SRCADDR0	= ( (uint16_t) (&usSineLUT[0 + ucLutOffset]) >> 0) & 0xFF;
-		DMA.CH0.SRCADDR1	= ( (uint16_t) (&usSineLUT[0 + ucLutOffset]) >> 8) & 0xFF;
-		DMA.CH0.CTRLA		|= DMA_CH_ENABLE_bm;		
-	}	
 }
 
-void vDMAIntHandler()
+/*void vDMAIntHandler()
 {
 	/*
 	*
 	* Wenn wir nicht am Ararbeiten von Symbolen sind, dann gehen wir in diesen Task
-	*/	
+	
 
 
 	if(ucQamBlockTransfer == 0)
@@ -142,19 +176,19 @@ void vDMAIntHandler()
 			/* If xHigherPriorityTaskWoken is now set to pdTRUE then a context
 			switch should be requested.  The macro used is port specific and will
 			be either portYIELD_FROM_ISR() or portEND_SWITCHING_ISR() - refer to
-			the documentation page for the port being used. */
+			the documentation page for the port being used. 
 
 			//portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
 		}
 	}
 	
-}
+}*/
 
 void vInitDMATimer()
 {
 	/*
 	*
-	* Timer für DMA initialisieren
+	* Timer fÃ¼r DMA initialisieren
 	*/	
 
 	TCC1.CTRLA = 0; 
