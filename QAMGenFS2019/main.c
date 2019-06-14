@@ -34,55 +34,76 @@
 #include "Menu_IMU.h"
 
 
-
 extern void vApplicationIdleHook( void );
-
 TaskHandle_t xTaskDMAHandler;
 
+
+volatile uint8_t ucCPULoad = 0;
+
+/**
+* vApplicationIdleHook calculates the actual CPU load based on Ticks.
+* @param none
+* @return none
+* @author C. Hediger
+*/
 void vApplicationIdleHook( void )
 {	
-	
+	static uint32_t idleTicks = 0;
+	static uint32_t lastTick = 0;
+	static uint32_t beginTicks = 0;
+	/* Calculating CPU Load for a period of 3 Seconds. */
+	if((xTaskGetTickCount()-beginTicks) > 3000)
+	{
+		ucCPULoad = (uint8_t)(100.0 - ((idleTicks / 3.0) / 10.0));
+		idleTicks = 0;		
+		beginTicks = xTaskGetTickCount();
+	}
+	else
+	{
+		if(lastTick != xTaskGetTickCount())
+		{	
+			if((xTaskGetTickCount() - lastTick) == 1)
+			{
+				idleTicks++;
+				lastTick = xTaskGetTickCount();
+			}
+			else
+			{
+				lastTick = xTaskGetTickCount();
+			}
+		}
+	}
 }
 
 int main(void)
 {
-	resetReason_t reason = getResetReason();
 	vInitClock();
 	vInitDisplay();
-	
-	
 	
 	vInitDAC();
 	vInitDMATimer();
 	vInitDMA();
 	
-	xGlobalProtocolBuffer_A_Key = xSemaphoreCreateMutex();
-	xGlobalProtocolBuffer_B_Key = xSemaphoreCreateMutex();
+	xGlobalFrameBuffer_A_Key = xSemaphoreCreateMutex();
+	xGlobalFrameBuffer_B_Key = xSemaphoreCreateMutex();
+	xSettingKey = xSemaphoreCreateMutex();	
+	xStatusKey = xSemaphoreCreateMutex();	
+
 
 	xTaskCreate( vMenu, (const char *) "Menu", configMINIMAL_STACK_SIZE, NULL, 1, &xMenu);
 	xTaskCreate( vIMU, (const char *) "IMU", configMINIMAL_STACK_SIZE, NULL, 1, &xIMU);
 	xTaskCreate( vTestpattern, (const char *) "IMU", configMINIMAL_STACK_SIZE, NULL, 1, &xTestpattern);
-	xTaskCreate( vProtokollHandlerTask, (const char *) "ProtokollHandlerTask", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+	xTaskCreate( vProtokollHandlerTask, (const char *) "Protocol", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 	xTaskCreate( vOutput, (const char *) "IMU", configMINIMAL_STACK_SIZE, NULL, 1, &xIO);
-	
+	xTaskCreate( vTask_DMAHandler, (const char *) "Modulator", configMINIMAL_STACK_SIZE , NULL, 2, NULL);
 
-	//xTaskCreate( vTask_DMAHandler, (const char *) "dmaHandler", configMINIMAL_STACK_SIZE + 100, NULL, 1, &xTaskDMAHandler);
-	
-	//uint16_t size = sizeof(struct ALDP_t_class);
-	
+
 	xALDPQueue = xQueueCreate( 10, sizeof(struct ALDP_t_class));
 	xDatabriged = xQueueCreate( 10, sizeof(uint8_t) );	
 	
 
-	xSettingKey = xSemaphoreCreateMutex(); //Create Lock
-	xStatusKey = xSemaphoreCreateMutex(); //Create Lock
-	
 	
 	vDisplayClear();
-	vDisplayWriteStringAtPos(0,0,"FreeRdTsdOS 10.0.1");
-	vDisplayWriteStringAtPos(1,0,"EDUBoard 1.0");
-	vDisplayWriteStringAtPos(2,0,"Tempslate");
-	vDisplayWriteStringAtPos(3,0,"ResetReason: %d", reason);
 	vTaskStartScheduler();
 	return 0;
 }

@@ -30,6 +30,8 @@ TaskHandle_t xIMU;
 TaskHandle_t xTestpattern;
 TaskHandle_t xIO;
 
+extern volatile uint8_t	ucCPULoad;
+
 SemaphoreHandle_t xSettingKey;		//Lock for Settings
 SemaphoreHandle_t xStatusKey;		//Lock for Status
 

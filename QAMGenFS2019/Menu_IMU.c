@@ -176,6 +176,10 @@ void vMenu(void *pvParameters) {
 			{
 				vDisplayWriteStringAtPos(0,0,"QAMGen2019");
 				vDisplayWriteStringAtPos(2,0,"Status");
+				vDisplayWriteStringAtPos(3,0,"CPU:");
+				vDisplayWriteStringAtPos(3,5,"%d%%", ucCPULoad);
+				
+				
 				if(xSemaphoreTake(xStatusKey, 5 / portTICK_RATE_MS))
 				{
 					if((ulStatus && STATUS_ERROR)== STATUS_ERROR)
@@ -400,9 +404,8 @@ void vIMU(void *pvParameters) {
 * vOutput is to manage the I/O Output
 * @param args Unused
 * @return Nothing
-* @author C.Hï¿½uptli
+* @author C.Haeuptli
 */
-
 void vOutput(void *pvParameters) {
 	(void) pvParameters;
 	

@@ -1,8 +1,8 @@
 /*
  * protocolhandler.c
  *
- *  Created: 14.06.2019
- *  Author: C. Hediger
+ *  Created:	14.06.2019
+ *  Author:		C. Hediger
  */ 
 
 #include "avr_compiler.h"
@@ -13,23 +13,19 @@
 #include "protocolhandler.h"
 #include "string.h"
 #include "Menu_IMU.h"
-
 #include "semphr.h"
 
 #define BUFFER_A					0
 #define BUFFER_B					1
 #define NO_BUFFER					2
 
+volatile uint8_t ucGlobalFrameBuffer_A[MAX_FRAME_SIZE];
+volatile uint8_t ucGlobalFrameBuffer_B[MAX_FRAME_SIZE];
 
-uint8_t ucGlobalProtocolBuffer_A[ PROTOCOLBUFFERSIZE ] = {};
-uint8_t ucGlobalProtocolBuffer_B[ PROTOCOLBUFFERSIZE ] = {};
+xQueueHandle xALDPQueue;								
 
-xQueueHandle xALDPQueue;								// Data to pack and send
-
-
-SemaphoreHandle_t xGlobalProtocolBuffer_A_Key;			//A-Resource for ucGlobalProtocolBuffer_A
-SemaphoreHandle_t xGlobalProtocolBuffer_B_Key;			//A-Resource for ucGlobalProtocolBuffer_B
-
+SemaphoreHandle_t xGlobalFrameBuffer_A_Key;			
+SemaphoreHandle_t xGlobalFrameBuffer_B_Key;			
 
 uint8_t xFillOutputBuffer(struct ALDP_t_class *xALDP_Paket,struct SLDP_t_class *xSLDP_Paket, uint16_t Preamble);
 void vWriteToOutputBuffer(uint8_t data);
@@ -40,8 +36,8 @@ volatile uint8_t ucActiveBuffer = NO_BUFFER;
 volatile uint8_t ucActualBufferPos = 0;
 
 void vProtokollHandlerTask( void *pvParameters ) {
-	(void) pvParameters;
-	
+
+	/* Local Paket structures */	
 	struct ALDP_t_class xALDP_Paket;
 	struct SLDP_t_class xSLDP_Paket;
 	
@@ -57,13 +53,13 @@ void vProtokollHandlerTask( void *pvParameters ) {
 	/* Try to get Buffer A */
 	if(ucActiveBuffer == NO_BUFFER)
 	{
-		xSemaphoreTake(xGlobalProtocolBuffer_A_Key,portMAX_DELAY);
+		xSemaphoreTake(xGlobalFrameBuffer_A_Key,portMAX_DELAY);
 		ucActiveBuffer = BUFFER_A;
 	}
 
 	while(1)
 	{			
-		/* we wait maximum 10ms for new pakets to become available 
+		/* we wait maximum 50ms for new pakets to become available 
 			after that periode, we release the buffer and send the Bytes*/ 
 		if(xQueueReceive(xALDPQueue,&(xALDP_Paket),50/portTICK_PERIOD_MS))
 		{
@@ -87,7 +83,6 @@ void vProtokollHandlerTask( void *pvParameters ) {
 		
 			/* We dont have to check to which buffer we must send our data. Everyhthing gets handled in the vWriteToOutputBuffer */
 			xFillOutputBuffer(&xALDP_Paket,&xSLDP_Paket,GLOBAL_FRAME_PREAMBLE);
-		 
 		}
 		else
 		{
@@ -178,7 +173,7 @@ void vWriteToOutputBuffer(uint8_t data)
 {
 	/* Check if we hit the Protocollbuffersize constraint. 
 	   we subtract one because the first byte is the size byte.*/
-	if(ucActualBufferPos == PROTOCOLBUFFERSIZE-1)
+	if(ucActualBufferPos == MAX_FRAME_SIZE-1)
 	{
 		/* If we hit the limit, then we mark the buffer to be ready to send
 		   we also change to the next buffer and reset our counter to zero.*/
@@ -187,8 +182,8 @@ void vWriteToOutputBuffer(uint8_t data)
 	
 	/* Copy the incoming data to the appropriate buffer 
 	   we always write to an offset of one, because position 0 is reserved for the size byte*/
-	if(ucActiveBuffer == BUFFER_A) ucGlobalProtocolBuffer_A[ucActualBufferPos+1] = data;
-	else ucGlobalProtocolBuffer_B[ucActualBufferPos+1] = data;
+	if(ucActiveBuffer == BUFFER_A) ucGlobalFrameBuffer_A[ucActualBufferPos+1] = data;
+	else ucGlobalFrameBuffer_B[ucActualBufferPos+1] = data;
 	ucActualBufferPos++;
 }
 	
@@ -204,17 +199,17 @@ void vReleaseBufferAndSwitch()
 	if(ucActiveBuffer == BUFFER_A)
 	{
 		/* Write FrameSize into Frame */
-		ucGlobalProtocolBuffer_A[0] = ucActualBufferPos;
-		xSemaphoreGive(xGlobalProtocolBuffer_A_Key);
-		xSemaphoreTake(xGlobalProtocolBuffer_B_Key, portMAX_DELAY);
+		ucGlobalFrameBuffer_A[0] = ucActualBufferPos;
+		xSemaphoreGive(xGlobalFrameBuffer_A_Key);
+		xSemaphoreTake(xGlobalFrameBuffer_B_Key, portMAX_DELAY);
 		ucActiveBuffer = BUFFER_B;
 	}
 	else
 	{
 		/* Write FrameSize into Frame */
-		ucGlobalProtocolBuffer_B[0] = ucActualBufferPos;
-		xSemaphoreGive(xGlobalProtocolBuffer_B_Key);
-		xSemaphoreTake(xGlobalProtocolBuffer_A_Key, portMAX_DELAY);
+		ucGlobalFrameBuffer_B[0] = ucActualBufferPos;
+		xSemaphoreGive(xGlobalFrameBuffer_B_Key);
+		xSemaphoreTake(xGlobalFrameBuffer_A_Key, portMAX_DELAY);
 		ucActiveBuffer = BUFFER_A;
 	}
 	ucActualBufferPos = 0;

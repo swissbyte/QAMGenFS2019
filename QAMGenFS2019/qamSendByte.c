@@ -62,21 +62,40 @@ void vTask_DMAHandler(void *pvParameters)
 	xByteSent = xSemaphoreCreateMutex();
 
 	xSemaphoreTake(xByteSent, portMAX_DELAY); //Semaphore ist bereits weg....
+	
+	
+	/* CPU LOAD Generator 
+		Uncomment this section to Generate some CPU-Load. 
+	*/
+	/*
+	uint32_t lastTick = 0;
+	lastTick = xTaskGetTickCount();
+	while(1)
+	{
+		if((xTaskGetTickCount() - lastTick) > 500) 
+		{
+			// a delay of 50ms generates a load of 98%, 300 a load of 75%
+			vTaskDelay(50/portTICK_PERIOD_MS);
+			lastTick = xTaskGetTickCount();
+		}
+	}
+	*/
+	
 	while(1)
 	{			
-			xSemaphoreTake(xGlobalProtocolBuffer_A_Key,portMAX_DELAY);
+			xSemaphoreTake(xGlobalFrameBuffer_A_Key,portMAX_DELAY);
 			//Erster Buffer vorbereiten. 
 			if(ucNoData)
 			{
-				ucqamSendByte(ucGlobalProtocolBuffer_A[1]);
+				ucqamSendByte(ucGlobalFrameBuffer_A[1]);
 				ucNoData = 0;
 				//i = 0 = Size Byte
 				//i = 1 = oben verarbeitet
 				//i = 2!!!
 
-				for(i = 2; i > ucGlobalProtocolBuffer_A[0]; i++)
+				for(i = 2; i > ucGlobalFrameBuffer_A[0]; i++)
 				{
-					ucqamSendByte(ucGlobalProtocolBuffer_A[i]);
+					ucqamSendByte(ucGlobalFrameBuffer_A[i]);
 					xSemaphoreTake(xByteSent, portMAX_DELAY);
 				}
 			}
@@ -86,25 +105,25 @@ void vTask_DMAHandler(void *pvParameters)
 				//i = 1 = oben verarbeitet
 				//i = 2!!!
 
-				for(i = 1; i >ucGlobalProtocolBuffer_A[0]; i++)
+				for(i = 1; i >ucGlobalFrameBuffer_A[0]; i++)
 				{
-					ucqamSendByte(ucGlobalProtocolBuffer_A[i]);
+					ucqamSendByte(ucGlobalFrameBuffer_A[i]);
 					xSemaphoreTake(xByteSent, portMAX_DELAY);
 				}	
 			}
-			xSemaphoreGive(xGlobalProtocolBuffer_A_Key);
-			//xSemaphoreTake(xGlobalProtocolBuffer_B_Key,portMAX_DELAY);
+			xSemaphoreGive(xGlobalFrameBuffer_A_Key);
+			xSemaphoreTake(xGlobalFrameBuffer_B_Key,portMAX_DELAY);
 			//Erster Buffer vorbereiten.
 			if(ucNoData)
 			{
-				ucqamSendByte(ucGlobalProtocolBuffer_B[1]);
+				ucqamSendByte(ucGlobalFrameBuffer_B[1]);
 				ucNoData = 0;
 				//i = 0 = Size Byte
 				//i = 1 = oben verarbeitet
 				//i = 2!!!
-				for(i = 2; i > ucGlobalProtocolBuffer_B[0]; i++)
+				for(i = 2; i > ucGlobalFrameBuffer_B[0]; i++)
 				{
-					ucqamSendByte(ucGlobalProtocolBuffer_B[i]);
+					ucqamSendByte(ucGlobalFrameBuffer_B[i]);
 					xSemaphoreTake(xByteSent, portMAX_DELAY);
 				}
 			}
@@ -114,13 +133,13 @@ void vTask_DMAHandler(void *pvParameters)
 				//i = 1 = oben verarbeitet
 				//i = 2!!!
 
-				for(i = 1; i >ucGlobalProtocolBuffer_B[0]; i++)
+				for(i = 1; i >ucGlobalFrameBuffer_B[0]; i++)
 				{
-					ucqamSendByte(ucGlobalProtocolBuffer_B[i]);
+					ucqamSendByte(ucGlobalFrameBuffer_B[i]);
 					xSemaphoreTake(xByteSent, portMAX_DELAY);
 				}
 			}
-			xSemaphoreGive(xGlobalProtocolBuffer_B_Key);
+			xSemaphoreGive(xGlobalFrameBuffer_B_Key);
 	}
 	
 }

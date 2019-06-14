@@ -8,7 +8,7 @@
 
 #ifndef PROTOKOLLHANDLER_H_
 #define PROTOKOLLHANDLER_H_
-#define	PROTOCOLBUFFERSIZE				32
+#define	MAX_FRAME_SIZE				32
 #include "semphr.h"
 
 
@@ -34,10 +34,10 @@ struct SLDP_t_class
 	uint8_t sldp_crc8;
 };
 
-extern SemaphoreHandle_t xGlobalProtocolBuffer_A_Key;			//A-Resource for ucGlobalProtocolBuffer_A
-extern SemaphoreHandle_t xGlobalProtocolBuffer_B_Key;			//A-Resource for ucGlobalProtocolBuffer_B
-extern uint8_t ucGlobalProtocolBuffer_A[ PROTOCOLBUFFERSIZE ];
-extern uint8_t ucGlobalProtocolBuffer_B[ PROTOCOLBUFFERSIZE ];
+extern SemaphoreHandle_t xGlobalFrameBuffer_A_Key;			//A-Resource for ucGlobalFrameBuffer_A
+extern SemaphoreHandle_t xGlobalFrameBuffer_B_Key;			//A-Resource for ucGlobalFrameBuffer_B
+extern volatile uint8_t ucGlobalFrameBuffer_A[ MAX_FRAME_SIZE ];
+extern volatile uint8_t ucGlobalFrameBuffer_B[ MAX_FRAME_SIZE ];
 
 extern xQueueHandle xALDPQueue;								// Data to pack and send
 
