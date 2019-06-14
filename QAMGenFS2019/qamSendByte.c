@@ -55,6 +55,7 @@ void ucqamSendByte(uint8_t ucByte)
 
 void vTask_DMAHandler(void *pvParameters) 
 {
+
 	vSetDMA_LUT_Offset();
 
 	uint8_t i = 0;
@@ -67,15 +68,15 @@ void vTask_DMAHandler(void *pvParameters)
 			//Erster Buffer vorbereiten. 
 			if(ucNoData)
 			{
-				ucqamSendByte(ucglobalProtocolBuffer_A[1]);
+				ucqamSendByte(ucGlobalProtocolBuffer_A[1]);
 				ucNoData = 0;
 				//i = 0 = Size Byte
 				//i = 1 = oben verarbeitet
 				//i = 2!!!
 
-				for(i = 2; i > ucglobalProtocolBuffer_A[0]; i++)
+				for(i = 2; i > ucGlobalProtocolBuffer_A[0]; i++)
 				{
-					ucqamSendByte(ucglobalProtocolBuffer_A[i]);
+					ucqamSendByte(ucGlobalProtocolBuffer_A[i]);
 					xSemaphoreTake(xByteSent, portMAX_DELAY);
 				}
 			}
@@ -85,9 +86,9 @@ void vTask_DMAHandler(void *pvParameters)
 				//i = 1 = oben verarbeitet
 				//i = 2!!!
 
-				for(i = 1; i >ucglobalProtocolBuffer_A[0]; i++)
+				for(i = 1; i >ucGlobalProtocolBuffer_A[0]; i++)
 				{
-					ucqamSendByte(ucglobalProtocolBuffer_A[i]);
+					ucqamSendByte(ucGlobalProtocolBuffer_A[i]);
 					xSemaphoreTake(xByteSent, portMAX_DELAY);
 				}	
 			}
@@ -96,14 +97,14 @@ void vTask_DMAHandler(void *pvParameters)
 			//Erster Buffer vorbereiten.
 			if(ucNoData)
 			{
-				ucqamSendByte(ucglobalProtocolBuffer_B[1]);
+				ucqamSendByte(ucGlobalProtocolBuffer_B[1]);
 				ucNoData = 0;
 				//i = 0 = Size Byte
 				//i = 1 = oben verarbeitet
 				//i = 2!!!
-				for(i = 2; i > ucglobalProtocolBuffer_B[0]; i++)
+				for(i = 2; i > ucGlobalProtocolBuffer_B[0]; i++)
 				{
-					ucqamSendByte(ucglobalProtocolBuffer_B[i]);
+					ucqamSendByte(ucGlobalProtocolBuffer_B[i]);
 					xSemaphoreTake(xByteSent, portMAX_DELAY);
 				}
 			}
@@ -113,9 +114,9 @@ void vTask_DMAHandler(void *pvParameters)
 				//i = 1 = oben verarbeitet
 				//i = 2!!!
 
-				for(i = 1; i >ucglobalProtocolBuffer_B[0]; i++)
+				for(i = 1; i >ucGlobalProtocolBuffer_B[0]; i++)
 				{
-					ucqamSendByte(ucglobalProtocolBuffer_B[i]);
+					ucqamSendByte(ucGlobalProtocolBuffer_B[i]);
 					xSemaphoreTake(xByteSent, portMAX_DELAY);
 				}
 			}

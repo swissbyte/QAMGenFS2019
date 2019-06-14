@@ -116,44 +116,6 @@ void vConfigureDMASource(void)
 	DMA.CH0.CTRLA		|= DMA_CH_ENABLE_bm;
 }
 
-void vDoDMAStuff(void)
-{
-		if(ucQamBlockTransfer == 1)
-		{
-			ucQamBlockTransfer = 0;
-			if(ucActivebuffer)
-			{
-				ucActivebuffer=0;	
-			}
-			else
-			{
-				ucActivebuffer=1;	
-			}
-			xSemaphoreGiveFromISR(xByteSent,NULL);
-		}
-
-		if(ucQamSymbolCount != 0)
-		{
-			ucQamBlockTransfer = 2;
-			ucQamSymbolCount --;
-		}
-		else
-		{
-			if(ucQamBlockTransfer == 2) ucQamBlockTransfer = 1;
-		}
-		
-		if(ucQamBlockTransfer)
-		{
-			vConfigureDMASource();
-		}
-}
-
-void vConfigureDMASource(void)
-{
-	DMA.CH0.SRCADDR0	= ( (uint16_t) (&usSineLUT[0 + ucLutOffset]) >> 0) & 0xFF;
-	DMA.CH0.SRCADDR1	= ( (uint16_t) (&usSineLUT[0 + ucLutOffset]) >> 8) & 0xFF;
-	DMA.CH0.CTRLA		|= DMA_CH_ENABLE_bm;
-}
 
 void vSetDMA_LUT_Offset()
 {
@@ -198,7 +160,7 @@ void vSetDMA_LUT_Offset()
 
 /*void vDMAIntHandler()
 {
-	/*
+	
 	*
 	* Wenn wir nicht am Ararbeiten von Symbolen sind, dann gehen wir in diesen Task
 	
@@ -212,7 +174,7 @@ void vSetDMA_LUT_Offset()
 		xResult = xEventGroupSetBitsFromISR(xDMAProcessEventGroup,DMA_EVT_GRP_QAM_FINISHED,&xHigherPriorityTaskWoken );
 		if( xResult != pdFAIL )
 		{
-			/* If xHigherPriorityTaskWoken is now set to pdTRUE then a context
+			* If xHigherPriorityTaskWoken is now set to pdTRUE then a context
 			switch should be requested.  The macro used is port specific and will
 			be either portYIELD_FROM_ISR() or portEND_SWITCHING_ISR() - refer to
 			the documentation page for the port being used. 

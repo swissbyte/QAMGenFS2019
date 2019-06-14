@@ -25,12 +25,6 @@
 #define STATUS_DATA_READY			1<<1
 #define STATUS_DATA_SENDING			1<<2
 
-#define PAKET_TYPE_ALDP				0x40
-
-#define ALDP_SRC_UART				0x00
-#define ALDP_SRC_I2C				0x01
-#define ALDP_SRC_Test				0x02
-
 TaskHandle_t xMenu;
 TaskHandle_t xIMU;
 TaskHandle_t xTestpattern;

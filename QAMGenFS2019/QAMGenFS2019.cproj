@@ -39,7 +39,7 @@
       </framework-data>
     </AsfFrameworkConfig>
     <avrtool>com.atmel.avrdbg.tool.edbg</avrtool>
-    <avrtoolserialnumber>ATMLEDBGC04201100001</avrtoolserialnumber>
+    <avrtoolserialnumber>ATMLEDBGC04201100016</avrtoolserialnumber>
     <avrdeviceexpectedsignature>0x1E9742</avrdeviceexpectedsignature>
     <avrtoolinterface>JTAG</avrtoolinterface>
     <com_atmel_avrdbg_tool_edbg>
@@ -52,15 +52,14 @@
           <JtagDevicesAfter>0</JtagDevicesAfter>
           <JtagInstrBitsBefore>0</JtagInstrBitsBefore>
           <JtagInstrBitsAfter>0</JtagInstrBitsAfter>
-          <JtagSelectedDeviceIndexInChain>
-          </JtagSelectedDeviceIndexInChain>
+          <JtagSelectedDeviceIndexInChain>0</JtagSelectedDeviceIndexInChain>
           <JtagDaisyChainDevices>
           </JtagDaisyChainDevices>
         </InterfaceProperties>
         <InterfaceName>JTAG</InterfaceName>
       </ToolOptions>
       <ToolType>com.atmel.avrdbg.tool.edbg</ToolType>
-      <ToolNumber>ATMLEDBGC04201100001</ToolNumber>
+      <ToolNumber>ATMLEDBGC04201100016</ToolNumber>
       <ToolName>EDBG</ToolName>
     </com_atmel_avrdbg_tool_edbg>
     <avrtoolinterfaceclock>4000000</avrtoolinterfaceclock>

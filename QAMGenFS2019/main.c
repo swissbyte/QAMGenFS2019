@@ -56,30 +56,32 @@ int main(void)
 	vInitDMATimer();
 	vInitDMA();
 	
-
-	
 	xGlobalProtocolBuffer_A_Key = xSemaphoreCreateMutex();
 	xGlobalProtocolBuffer_B_Key = xSemaphoreCreateMutex();
-
 
 	xTaskCreate( vMenu, (const char *) "Menu", configMINIMAL_STACK_SIZE, NULL, 1, &xMenu);
 	xTaskCreate( vIMU, (const char *) "IMU", configMINIMAL_STACK_SIZE, NULL, 1, &xIMU);
 	xTaskCreate( vTestpattern, (const char *) "IMU", configMINIMAL_STACK_SIZE, NULL, 1, &xTestpattern);
 	xTaskCreate( vProtokollHandlerTask, (const char *) "ProtokollHandlerTask", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 	xTaskCreate( vOutput, (const char *) "IMU", configMINIMAL_STACK_SIZE, NULL, 1, &xIO);
+	
 
-	xTaskCreate( vTask_DMAHandler, (const char *) "dmaHandler", configMINIMAL_STACK_SIZE, NULL, 2, &xTaskDMAHandler);
-	xData = xQueueCreate( 10, sizeof(struct ALDP_t_class) );	
+	//xTaskCreate( vTask_DMAHandler, (const char *) "dmaHandler", configMINIMAL_STACK_SIZE + 100, NULL, 1, &xTaskDMAHandler);
+	
+	//uint16_t size = sizeof(struct ALDP_t_class);
+	
+	xALDPQueue = xQueueCreate( 10, sizeof(struct ALDP_t_class));
 	xDatabriged = xQueueCreate( 10, sizeof(uint8_t) );	
+	
 
 	xSettingKey = xSemaphoreCreateMutex(); //Create Lock
 	xStatusKey = xSemaphoreCreateMutex(); //Create Lock
 	
 	
 	vDisplayClear();
-	vDisplayWriteStringAtPos(0,0,"FreeRTOS 10.0.1");
+	vDisplayWriteStringAtPos(0,0,"FreeRdTsdOS 10.0.1");
 	vDisplayWriteStringAtPos(1,0,"EDUBoard 1.0");
-	vDisplayWriteStringAtPos(2,0,"Template");
+	vDisplayWriteStringAtPos(2,0,"Tempslate");
 	vDisplayWriteStringAtPos(3,0,"ResetReason: %d", reason);
 	vTaskStartScheduler();
 	return 0;
