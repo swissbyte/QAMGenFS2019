@@ -41,6 +41,7 @@ void ucqamSendByte(uint8_t ucByte)
 		ucQamSymbolsbufferA[ucSymbol] = ucQamLUT[(ucByte >> (2 * ucSymbol))  & 0x03];
 		}
 	}
+
 	if(!ucActivebuffer)
 	{
 	ucDataReadyA = 1;
@@ -55,8 +56,10 @@ void ucqamSendByte(uint8_t ucByte)
 void vTask_DMAHandler(void *pvParameters) 
 {
 	vSetDMA_LUT_Offset();
+
 	uint8_t i = 0;
 	xByteSent = xSemaphoreCreateMutex();
+
 	xSemaphoreTake(xByteSent, portMAX_DELAY); //Semaphore ist bereits weg....
 	while(1)
 	{			
@@ -69,6 +72,7 @@ void vTask_DMAHandler(void *pvParameters)
 				//i = 0 = Size Byte
 				//i = 1 = oben verarbeitet
 				//i = 2!!!
+
 				for(i = 2; i > ucglobalProtocolBuffer_A[0]; i++)
 				{
 					ucqamSendByte(ucglobalProtocolBuffer_A[i]);
@@ -80,6 +84,7 @@ void vTask_DMAHandler(void *pvParameters)
 				//i = 0 = Size Byte
 				//i = 1 = oben verarbeitet
 				//i = 2!!!
+
 				for(i = 1; i >ucglobalProtocolBuffer_A[0]; i++)
 				{
 					ucqamSendByte(ucglobalProtocolBuffer_A[i]);
@@ -107,6 +112,7 @@ void vTask_DMAHandler(void *pvParameters)
 				//i = 0 = Size Byte
 				//i = 1 = oben verarbeitet
 				//i = 2!!!
+
 				for(i = 1; i >ucglobalProtocolBuffer_B[0]; i++)
 				{
 					ucqamSendByte(ucglobalProtocolBuffer_B[i]);

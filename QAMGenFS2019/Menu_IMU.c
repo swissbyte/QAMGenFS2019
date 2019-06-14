@@ -2,7 +2,7 @@
  * Menu_IMU.c
  *
  * This is the main Methode which generate the display output and organize the IMU input.
- * @Author C. Häuptli
+ * @Author C. HÃ¤uptli
  */ 
 
  #include <avr/io.h>
@@ -16,7 +16,7 @@ uint32_t ulStatus = 0;				//P-Resource Status
 * vMenu is responsible for the display output and handles the settings of the buttons
 * @param args Unused
 * @return Nothing
-* @author C.Häuptli
+* @author C.HÃ¤uptli
 */
 
 void vMenu(void *pvParameters) {
@@ -264,7 +264,7 @@ void vMenu(void *pvParameters) {
 * vIMU is to manage the Accelerometer and filter the data for the game
 * @param args Unused
 * @return Nothing
-* @author C.Häuptli
+* @author C.HÃ¤uptli
 */
 
 void vIMU(void *pvParameters) {
@@ -373,7 +373,22 @@ void vIMU(void *pvParameters) {
 		{
 			if (uxQueueMessagesWaiting(xData)< 2)
 			{
-				xQueueSendToBack(xData,&ucData_to_send,portMAX_DELAY);
+				struct ALDP_t_class xALDP_Paket;
+				xALDP_Paket.aldp_hdr_byte_2 = 0x01;
+				if(xQAMSettings.bits.bSource_I2C)
+				{
+					xALDP_Paket.aldp_hdr_byte_1 =  PAKET_TYPE_ALDP|ALDP_SRC_I2C; 
+				}
+				if(xQAMSettings.bits.bSource_UART)
+				{
+					xALDP_Paket.aldp_hdr_byte_1 = PAKET_TYPE_ALDP|ALDP_SRC_UART; 
+				}
+				if(xQAMSettings.bits.bSource_Test)
+				{
+					xALDP_Paket.aldp_hdr_byte_1 = PAKET_TYPE_ALDP|ALDP_SRC_Test; 
+				} 
+				xALDP_Paket.aldp_payload[0] = ucData_to_send;
+				xQueueSendToBack(xData,&xALDP_Paket,portMAX_DELAY);
 			}
 		}
 		vTaskDelay(2 / portTICK_RATE_MS);
@@ -385,7 +400,7 @@ void vIMU(void *pvParameters) {
 * vOutput is to manage the I/O Output
 * @param args Unused
 * @return Nothing
-* @author C.Hï¿½uptli
+* @author C.HÃ¯Â¿Â½uptli
 */
 
 void vOutput(void *pvParameters) {
@@ -474,7 +489,7 @@ void vOutput(void *pvParameters) {
 * vTestpattern is to test the QAM connection
 * @param args Unused
 * @return Nothing
-* @author C.Häuptli
+* @author C.HÃ¤uptli
 */
 
 void vTestpattern(void *pvParameters){
@@ -496,7 +511,7 @@ void vTestpattern(void *pvParameters){
 * vUART is to send the data from the UART
 * @param args Unused
 * @return Nothing
-* @author C.Häuptli
+* @author C.HÃ¤uptli
 */
 /*
 void vUART(void *pvParameters) {

@@ -116,6 +116,45 @@ void vConfigureDMASource(void)
 	DMA.CH0.CTRLA		|= DMA_CH_ENABLE_bm;
 }
 
+void vDoDMAStuff(void)
+{
+		if(ucQamBlockTransfer == 1)
+		{
+			ucQamBlockTransfer = 0;
+			if(ucActivebuffer)
+			{
+				ucActivebuffer=0;	
+			}
+			else
+			{
+				ucActivebuffer=1;	
+			}
+			xSemaphoreGiveFromISR(xByteSent,NULL);
+		}
+
+		if(ucQamSymbolCount != 0)
+		{
+			ucQamBlockTransfer = 2;
+			ucQamSymbolCount --;
+		}
+		else
+		{
+			if(ucQamBlockTransfer == 2) ucQamBlockTransfer = 1;
+		}
+		
+		if(ucQamBlockTransfer)
+		{
+			vConfigureDMASource();
+		}
+}
+
+void vConfigureDMASource(void)
+{
+	DMA.CH0.SRCADDR0	= ( (uint16_t) (&usSineLUT[0 + ucLutOffset]) >> 0) & 0xFF;
+	DMA.CH0.SRCADDR1	= ( (uint16_t) (&usSineLUT[0 + ucLutOffset]) >> 8) & 0xFF;
+	DMA.CH0.CTRLA		|= DMA_CH_ENABLE_bm;
+}
+
 void vSetDMA_LUT_Offset()
 {
 	/*

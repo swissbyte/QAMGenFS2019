@@ -16,7 +16,7 @@ struct ALDP_t_class
 {
 	uint8_t aldp_hdr_byte_1;
 	uint8_t aldp_hdr_byte_2;
-	uint8_t aldp_payload[];
+	uint8_t aldp_payload[10];
 };
 
 struct SLDP_t_class
@@ -30,6 +30,7 @@ extern SemaphoreHandle_t xGlobalProtocolBuffer_A_Key;			//A-Resource for ucGloba
 extern SemaphoreHandle_t xGlobalProtocolBuffer_B_Key;			//A-Resource for ucGlobalProtocolBuffer_B
 extern uint8_t ucglobalProtocolBuffer_A[ PROTOCOLBUFFERSIZE ];
 extern uint8_t ucglobalProtocolBuffer_B[ PROTOCOLBUFFERSIZE ];
+
 
 void vProtokollHandlerTask( void *pvParameters );
 

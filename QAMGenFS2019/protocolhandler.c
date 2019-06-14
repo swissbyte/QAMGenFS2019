@@ -13,6 +13,7 @@
 #include "protocolhandler.h"
 #include "string.h"
 #include "Menu_IMU.h"
+
 #include "semphr.h"
 
 /* Constants */
@@ -45,8 +46,7 @@ EventGroupHandle_t xStatus;								// something from Cedi
 uint8_t ucglobalProtocolBuffer_A[ PROTOCOLBUFFERSIZE ] = {};
 uint8_t ucglobalProtocolBuffer_B[ PROTOCOLBUFFERSIZE ] = {};
 
-//xQueueHandle xALDPQueue;								// Data to pack and send
-
+xQueueHandle xALDPQueue;								// Data to pack and send
 
 
 SemaphoreHandle_t xGlobalProtocolBuffer_A_Key;			//A-Resource for ucGlobalProtocolBuffer_A
@@ -65,7 +65,8 @@ void vProtokollHandlerTask( void *pvParameters ) {
 	PORTF.OUT = 0x01;
 */	
 
-	//xALDPQueue = xQueueCreate( ANZSENDQUEUE, sizeof(uint8_t) );
+
+	xALDPQueue = xQueueCreate( ANZSENDQUEUE, sizeof(uint8_t) );
 
 	
 	uint8_t	ucbuffercounter = 0;
@@ -76,7 +77,6 @@ void vProtokollHandlerTask( void *pvParameters ) {
 	uint8_t ucActiveBuffer = ACTIVEBUFFER_A;
 
 
-	
 	xSemaphoreTake( xGlobalProtocolBuffer_A_Key, portMAX_DELAY );
 
 
@@ -107,6 +107,7 @@ void vProtokollHandlerTask( void *pvParameters ) {
 			while( ( uxQueueMessagesWaiting( xData ) > 0 ) && (ucbuffercounter < ANZSENDQUEUE ) ) {
 				uint8_t xoutBufferPointer;
 				xQueueReceive( xData, &xoutBufferPointer , portMAX_DELAY );					 
+
 				xSendQueueBuffer[ ucbuffercounter ] = xoutBufferPointer;
 				ucbuffercounter++;
 			}
