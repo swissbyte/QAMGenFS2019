@@ -20,6 +20,8 @@ void vStartQAMTransfer();
 #define QAM_4_SYM_10	16
 #define QAM_4_SYM_11	24
 
+void vSetDMA_LUT_Offset();
+
 uint8_t ucQamSymbolsbufferA[8];
 uint8_t ucQamSymbolsbufferB[8];
 uint8_t ucActivebuffer;

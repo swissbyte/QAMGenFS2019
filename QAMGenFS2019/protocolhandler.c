@@ -12,6 +12,7 @@
 #include "event_groups.h"
 #include "protocolhandler.h"
 #include "string.h"
+#include "Menu_IMU.h"
 
 #include "semphr.h"
 
@@ -48,7 +49,6 @@ uint8_t ucglobalProtocolBuffer_B[ PROTOCOLBUFFERSIZE ] = {};
 xQueueHandle xALDPQueue;								// Data to pack and send
 
 
-
 SemaphoreHandle_t xGlobalProtocolBuffer_A_Key;			//A-Resource for ucGlobalProtocolBuffer_A
 SemaphoreHandle_t xGlobalProtocolBuffer_B_Key;			//A-Resource for ucGlobalProtocolBuffer_B
 
@@ -65,6 +65,7 @@ void vProtokollHandlerTask( void *pvParameters ) {
 	PORTF.OUT = 0x01;
 */	
 
+
 	xALDPQueue = xQueueCreate( ANZSENDQUEUE, sizeof(uint8_t) );
 
 	
@@ -75,9 +76,7 @@ void vProtokollHandlerTask( void *pvParameters ) {
 	
 	uint8_t ucActiveBuffer = ACTIVEBUFFER_A;
 
-	xGlobalProtocolBuffer_A_Key = xSemaphoreCreateMutex();
-	xGlobalProtocolBuffer_B_Key = xSemaphoreCreateMutex();
-	
+
 	xSemaphoreTake( xGlobalProtocolBuffer_A_Key, portMAX_DELAY );
 
 
@@ -99,15 +98,16 @@ void vProtokollHandlerTask( void *pvParameters ) {
 			xQueueSendToBack(xALDPQueue, &e, portMAX_DELAY);
 */
 			
-		if (uxQueueMessagesWaiting( xALDPQueue ) > 0) {
+		if (uxQueueMessagesWaiting( xData ) > 0) {
 			
 /* save data from Queue into Buffer */
 			ucbuffercounter = 2;
-			uint8_t xSendQueueBuffer[ uxQueueMessagesWaiting( xALDPQueue ) + 2 ];
+			uint8_t xSendQueueBuffer[ uxQueueMessagesWaiting( xData ) + 2 ];
 						
-			while( ( uxQueueMessagesWaiting( xALDPQueue ) > 0 ) && (ucbuffercounter < ANZSENDQUEUE ) ) {
+			while( ( uxQueueMessagesWaiting( xData ) > 0 ) && (ucbuffercounter < ANZSENDQUEUE ) ) {
 				uint8_t xoutBufferPointer;
-				xQueueReceive( xALDPQueue, &xoutBufferPointer , portMAX_DELAY );					 
+				xQueueReceive( xData, &xoutBufferPointer , portMAX_DELAY );					 
+
 				xSendQueueBuffer[ ucbuffercounter ] = xoutBufferPointer;
 				ucbuffercounter++;
 			}

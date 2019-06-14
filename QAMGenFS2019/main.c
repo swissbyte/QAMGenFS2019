@@ -57,18 +57,24 @@ int main(void)
 	vInitDMA();
 	
 
-	xTaskCreate( vTask_DMAHandler, (const char *) "dmaHandler", configMINIMAL_STACK_SIZE, NULL, 2, &xTaskDMAHandler);
+	
+	xGlobalProtocolBuffer_A_Key = xSemaphoreCreateMutex();
+	xGlobalProtocolBuffer_B_Key = xSemaphoreCreateMutex();
+
+
 	xTaskCreate( vMenu, (const char *) "Menu", configMINIMAL_STACK_SIZE, NULL, 1, &xMenu);
 	xTaskCreate( vIMU, (const char *) "IMU", configMINIMAL_STACK_SIZE, NULL, 1, &xIMU);
 	xTaskCreate( vTestpattern, (const char *) "IMU", configMINIMAL_STACK_SIZE, NULL, 1, &xTestpattern);
 	xTaskCreate( vProtokollHandlerTask, (const char *) "ProtokollHandlerTask", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 	xTaskCreate( vOutput, (const char *) "IMU", configMINIMAL_STACK_SIZE, NULL, 1, &xIO);
-	
+
+	xTaskCreate( vTask_DMAHandler, (const char *) "dmaHandler", configMINIMAL_STACK_SIZE, NULL, 2, &xTaskDMAHandler);
 	xData = xQueueCreate( 10, sizeof(struct ALDP_t_class) );	
 	xDatabriged = xQueueCreate( 10, sizeof(uint8_t) );	
-	
+
 	xSettingKey = xSemaphoreCreateMutex(); //Create Lock
 	xStatusKey = xSemaphoreCreateMutex(); //Create Lock
+	
 	
 	vDisplayClear();
 	vDisplayWriteStringAtPos(0,0,"FreeRTOS 10.0.1");

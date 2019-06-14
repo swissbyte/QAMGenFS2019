@@ -26,7 +26,7 @@
 volatile uint8_t ucLutOffset = 0; 
 uint8_t ucNextLUTOffset = 0;
 volatile uint8_t ucLutCount = 0;
-volatile uint8_t ucQamSymbolCount = 0;
+volatile uint8_t ucQamSymbolCount = 3;
 volatile uint8_t ucQamBlockTransfer = 0;
 
 volatile uint8_t ucDataReady = 0;
@@ -39,8 +39,8 @@ uint8_t ucQamSymbolsbufferB[8] = {0,0,0,0,0,0,0,0};
 
 
 	
-void vSetDMA_LUT_Offset();
 
+void vConfigureDMASource(void);
 
 
 const uint16_t usSineLUT[SYMBOL_BUFFER_SIZE * 2] =
@@ -76,11 +76,45 @@ void vInitDAC()
 }
 
 
-void vStartQAMTransfer(void)
+void vDoDMAStuff(void)
 {
-	vSetDMA_LUT_Offset();
+		if(ucQamBlockTransfer == 1)
+		{
+			ucQamBlockTransfer = 0;
+			if(ucActivebuffer)
+			{
+				ucActivebuffer=0;	
+			}
+			else
+			{
+				ucActivebuffer=1;	
+			}
+			ucQamSymbolCount = 3;	
+			xSemaphoreGiveFromISR(xByteSent,NULL);
+		}
+
+		if(ucQamSymbolCount != 0)
+		{
+			ucQamBlockTransfer = 2;
+			ucQamSymbolCount --;
+		}
+		else
+		{
+			if(ucQamBlockTransfer == 2) ucQamBlockTransfer = 1;
+		}
+		
+		if(ucQamBlockTransfer)
+		{
+			vConfigureDMASource();
+		}
 }
 
+void vConfigureDMASource(void)
+{
+	DMA.CH0.SRCADDR0	= ( (uint16_t) (&usSineLUT[0 + ucLutOffset]) >> 0) & 0xFF;
+	DMA.CH0.SRCADDR1	= ( (uint16_t) (&usSineLUT[0 + ucLutOffset]) >> 8) & 0xFF;
+	DMA.CH0.CTRLA		|= DMA_CH_ENABLE_bm;
+}
 
 void vDoDMAStuff(void)
 {
@@ -139,8 +173,9 @@ void vSetDMA_LUT_Offset()
 		else
 		{
 			//Keine Daten....
-			ucLutOffset = 0;
 			ucNoData = 1;
+			ucLutOffset =0;
+			//DACB.CH0DATA = 0x00;
 			vConfigureDMASource();
 		}
 	}
@@ -154,19 +189,19 @@ void vSetDMA_LUT_Offset()
 		else
 		{
 			//Keine Daten....
-			ucLutOffset = 0;
 			ucNoData = 1;
+			ucLutOffset =0;
 			vConfigureDMASource();
 		}
 	}
 }
 
-void vDMAIntHandler()
+/*void vDMAIntHandler()
 {
 	/*
 	*
 	* Wenn wir nicht am Ararbeiten von Symbolen sind, dann gehen wir in diesen Task
-	*/	
+	
 
 
 	if(ucQamBlockTransfer == 0)
@@ -180,13 +215,13 @@ void vDMAIntHandler()
 			/* If xHigherPriorityTaskWoken is now set to pdTRUE then a context
 			switch should be requested.  The macro used is port specific and will
 			be either portYIELD_FROM_ISR() or portEND_SWITCHING_ISR() - refer to
-			the documentation page for the port being used. */
+			the documentation page for the port being used. 
 
 			//portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
 		}
 	}
 	
-}
+}*/
 
 void vInitDMATimer()
 {

@@ -26,10 +26,11 @@ struct SLDP_t_class
 	uint8_t sldp_crc8;
 };
 
-SemaphoreHandle_t xGlobalProtocolBuffer_A_Key;			//A-Resource for ucGlobalProtocolBuffer_A
-SemaphoreHandle_t xGlobalProtocolBuffer_B_Key;			//A-Resource for ucGlobalProtocolBuffer_B
-uint8_t ucglobalProtocolBuffer_A[ PROTOCOLBUFFERSIZE ];
-uint8_t ucglobalProtocolBuffer_B[ PROTOCOLBUFFERSIZE ];
+extern SemaphoreHandle_t xGlobalProtocolBuffer_A_Key;			//A-Resource for ucGlobalProtocolBuffer_A
+extern SemaphoreHandle_t xGlobalProtocolBuffer_B_Key;			//A-Resource for ucGlobalProtocolBuffer_B
+extern uint8_t ucglobalProtocolBuffer_A[ PROTOCOLBUFFERSIZE ];
+extern uint8_t ucglobalProtocolBuffer_B[ PROTOCOLBUFFERSIZE ];
+
 
 void vProtokollHandlerTask( void *pvParameters );
 
