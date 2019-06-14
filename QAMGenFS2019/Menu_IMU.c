@@ -373,7 +373,22 @@ void vIMU(void *pvParameters) {
 		{
 			if (uxQueueMessagesWaiting(xData)< 2)
 			{
-				xQueueSendToBack(xData,&ucData_to_send,portMAX_DELAY);
+				struct ALDP_t_class xALDP_Paket;
+				xALDP_Paket.aldp_hdr_byte_2 = 0x01;
+				if(xQAMSettings.bits.bSource_I2C)
+				{
+					xALDP_Paket.aldp_hdr_byte_1 =  PAKET_TYPE_ALDP|ALDP_SRC_I2C; 
+				}
+				if(xQAMSettings.bits.bSource_UART)
+				{
+					xALDP_Paket.aldp_hdr_byte_1 = PAKET_TYPE_ALDP|ALDP_SRC_UART; 
+				}
+				if(xQAMSettings.bits.bSource_Test)
+				{
+					xALDP_Paket.aldp_hdr_byte_1 = PAKET_TYPE_ALDP|ALDP_SRC_Test; 
+				} 
+				xALDP_Paket.aldp_payload[0] = ucData_to_send;
+				xQueueSendToBack(xData,&xALDP_Paket,portMAX_DELAY);
 			}
 		}
 		vTaskDelay(2 / portTICK_RATE_MS);

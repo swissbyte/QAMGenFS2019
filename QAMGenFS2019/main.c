@@ -64,7 +64,7 @@ int main(void)
 	xTaskCreate( vProtokollHandlerTask, (const char *) "ProtokollHandlerTask", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 	xTaskCreate( vOutput, (const char *) "IMU", configMINIMAL_STACK_SIZE, NULL, 1, &xIO);
 	
-	xData = xQueueCreate( 10, sizeof(uint8_t) );	
+	xData = xQueueCreate( 10, sizeof(struct ALDP_t_class) );	
 	xDatabriged = xQueueCreate( 10, sizeof(uint8_t) );	
 	
 	xSettingKey = xSemaphoreCreateMutex(); //Create Lock
