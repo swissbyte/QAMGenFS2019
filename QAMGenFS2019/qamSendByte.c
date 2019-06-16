@@ -23,22 +23,23 @@ void ucqamSendByte(uint8_t ucByte)
 	/**
      * Teilt das Byte in 4 Symbole und speichert diese im Buffer
      */
-	uint8_t ucQamLUT[4] = {0,8,16,24};
+	uint8_t ucQamLUT[4] = {0,16,8,24};
 	uint8_t ucSymbol = 0;
+	
+	//ucByte = 0x1B; 
 	
 	for (ucSymbol=0; ucSymbol!=4; ucSymbol ++)
 	{
-
 		if(ucActivebuffer)
 		{
 		ucDataReadyB = 0;
-		ucQamSymbolsbufferB[ucSymbol] = ucQamLUT[(ucByte >> (2 * ucSymbol))  & 0x03];
+		ucQamSymbolsbufferB[ucSymbol] = ucQamLUT[(((ucByte >> (ucSymbol*2)) )  ) & 0x03];
 		
 		}
 		else
 		{
 		ucDataReadyA = 0;
-		ucQamSymbolsbufferA[ucSymbol] = ucQamLUT[(ucByte >> (2 * ucSymbol))  & 0x03];
+		ucQamSymbolsbufferA[ucSymbol] = ucQamLUT[(((ucByte >> (ucSymbol*2))  )  ) & 0x03];
 		}
 	}
 

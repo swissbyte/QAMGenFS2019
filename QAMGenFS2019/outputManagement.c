@@ -49,6 +49,19 @@ const uint16_t usSineLUT[SYMBOL_BUFFER_SIZE * 2] =
 	*
 	*Two Sinusodial Periods are saved here to easily move around with the offset!
 	*/
+	
+	115,137,159,179,196,211,221,228,
+	230,228,221,211,196,179,159,137,
+	115,93,71,51,34,19,9,2,
+	0,2,9,19,34,51,71,93,
+	115,137,159,179,196,211,221,228,
+	230,228,221,211,196,179,159,137,
+	115,93,71,51,34,19,9,2,
+	0,2,9,19,34,51,71,93,
+	
+	
+	
+	/*
 	0xfe,0xf4,0xd9,0xb0,0x7f,0x4e,0x25,0xa,
 	0x0,0xa,0x25,0x4e,0x7f,0xb0,0xd9,0xf4,
 	0xfe,0xf4,0xd9,0xb0,0x7f,0x4e,0x25,0xa,
@@ -56,7 +69,7 @@ const uint16_t usSineLUT[SYMBOL_BUFFER_SIZE * 2] =
 	0xfe,0xf4,0xd9,0xb0,0x7f,0x4e,0x25,0xa,
 	0x0,0xa,0x25,0x4e,0x7f,0xb0,0xd9,0xf4,
 	0xfe,0xf4,0xd9,0xb0,0x7f,0x4e,0x25,0xa,
-	0x0,0xa,0x25,0x4e,0x7f,0xb0,0xd9,0xf4,
+	0x0,0xa,0x25,0x4e,0x7f,0xb0,0xd9,0xf4,*/
 };
 
 
@@ -69,7 +82,7 @@ void vInitDAC()
 	*/
 	DACB.CTRLA = DAC_CH0EN_bm;
 	DACB.CTRLB = DAC_CH0TRIG_bm;	
-	DACB.CTRLC = DAC_REFSEL_AVCC_gc | DAC_LEFTADJ_bm; 
+	DACB.CTRLC = DAC_REFSEL_INT1V_gc | DAC_LEFTADJ_bm; 
 	DACB.EVCTRL = DAC_EVSEL_0_gc;	
 	DACB.CTRLA |= DAC_ENABLE_bm;
 	PORTB.DIRSET = 0x04;
@@ -78,6 +91,7 @@ void vInitDAC()
 
 void vDoDMAStuff(void)
 {
+	
 		if(ucQamBlockTransfer == 1)
 		{
 			ucQamBlockTransfer = 0;
@@ -89,11 +103,11 @@ void vDoDMAStuff(void)
 			{
 				ucActivebuffer=1;	
 			}
-			ucQamSymbolCount = 3;	
+			ucQamSymbolCount = 4;	
 			xSemaphoreGiveFromISR(xByteSent,NULL);
 		}
 
-		if(ucQamSymbolCount != 0)
+		if(ucQamSymbolCount != 1)
 		{
 			ucQamBlockTransfer = 2;
 			ucQamSymbolCount --;
@@ -101,12 +115,33 @@ void vDoDMAStuff(void)
 		else
 		{
 			if(ucQamBlockTransfer == 2) ucQamBlockTransfer = 1;
+			ucQamSymbolCount --;
 		}
 		
 		if(ucQamBlockTransfer)
 		{
 			vConfigureDMASource();
 		}
+	
+	/*
+		vConfigureDMASource();
+		ucQamSymbolCount++;
+		if(ucQamSymbolCount == 3)
+		{
+			ucQamSymbolCount = 0;
+			xSemaphoreGiveFromISR(xByteSent,NULL);			
+		}
+		else
+		{
+			if(ucQamBlockTransfer == 1)
+			{
+				if(ucActivebuffer) ucActivebuffer=0;
+				else ucActivebuffer=1;
+				ucQamBlockTransfer = 0;
+			}
+			
+		}*/
+	
 }
 
 void vConfigureDMASource(void)
@@ -123,7 +158,6 @@ void vSetDMA_LUT_Offset()
 	*
 	*Die Transaktion wurde gestartet und wir warten
 	*/
-
 	
 	if(ucActivebuffer)
 	{
@@ -196,7 +230,7 @@ void vInitDMATimer()
 	TCC1.CTRLB = TC_WGMODE_NORMAL_gc;
 	TCC1.CTRLD = TC_EVACT_RESTART_gc;
 	TCC1.CNT = 0;
-	TCC1.PER = 0x001F; 
+	TCC1.PER = 160-1; 
 	EVSYS.CH0MUX = EVSYS_CHMUX_TCC1_OVF_gc;
 }
 
@@ -212,19 +246,22 @@ void vInitDMA()
 	DMA.CTRL = DMA_RESET_bm;
 	while ((DMA.CTRL & DMA_RESET_bm) != 0);
 	
-	DMA.CTRL = DMA_CH_ENABLE_bm; 
+	
 	DMA.CH0.REPCNT		= 1;
-	DMA.CH0.CTRLA		= DMA_CH_BURSTLEN_2BYTE_gc | DMA_CH_SINGLE_bm;
+	DMA.CH0.CTRLA		= DMA_CH_BURSTLEN_2BYTE_gc | DMA_CH_SINGLE_bm ;
 	DMA.CH0.CTRLB		= 0x1;
 	DMA.CH0.ADDRCTRL	= DMA_CH_SRCDIR_INC_gc | DMA_CH_DESTDIR_FIXED_gc |  DMA_CH_SRCRELOAD_TRANSACTION_gc;
 	DMA.CH0.TRIGSRC		= DMA_CH_TRIGSRC_EVSYS_CH0_gc;
-	DMA.CH0.TRFCNT		= SYMBOL_BUFFER_SIZE; 
+	DMA.CH0.TRFCNT		= SYMBOL_BUFFER_SIZE*2; 
 	DMA.CH0.DESTADDR0	= ((uint16_t)(&DACB.CH0DATAH)>>0) & 0xFF;
 	DMA.CH0.DESTADDR1	= ((uint16_t)(&DACB.CH0DATAH)>>8) & 0xFF;
 	DMA.CH0.DESTADDR2	= 0;
 	DMA.CH0.SRCADDR0	= ( (uint16_t) (&usSineLUT[0 + ucLutOffset]) >> 0) & 0xFF;
-	DMA.CH0.SRCADDR1	= ( (uint16_t) (&usSineLUT[0 + ucLutOffset]) >> 8) & 0xFF;
+	DMA.CH0.SRCADDR1	= ( (uint16_t) (&usSineLUT[0 + ucLutOffset]) >> 0) & 0xFF;
 	DMA.CH0.SRCADDR2	= 0;
+	
+	DACB.CH0DATAL = 0;
+	DMA.CTRL = DMA_CH_ENABLE_bm; 
 	
 	TCC1.CTRLA			= TC_CLKSEL_DIV64_gc; 
 }
