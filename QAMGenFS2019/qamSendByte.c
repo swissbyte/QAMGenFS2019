@@ -15,7 +15,7 @@
 #include "protocolhandler.h"
 uint8_t volatile ucNoData= 0;
 
-
+#define BUTTON4_VALUE (PORTF.IN & PIN7_bm) 
 EventGroupHandle_t xDMAProcessEventGroup;
 
 void ucqamSendByte(uint8_t ucByte)
@@ -23,10 +23,13 @@ void ucqamSendByte(uint8_t ucByte)
 	/**
      * Teilt das Byte in 4 Symbole und speichert diese im Buffer
      */
-	uint8_t ucQamLUT[4] = {0,16,8,24};
+	uint8_t ucQamLUT[4] = {0,8,16,24};
 	uint8_t ucSymbol = 0;
 	
 	//ucByte = 0x1B; 
+	
+	if(BUTTON4_VALUE) ucByte = 0x00;
+	else ucByte = 0x27;
 	
 	for (ucSymbol=0; ucSymbol!=4; ucSymbol ++)
 	{
